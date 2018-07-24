@@ -9,17 +9,17 @@ import scala.tools.nsc.Global
 import scala.tools.nsc.plugins.{PluginComponent, Plugin}
 import scala.tools.nsc.transform.{Transform, TypingTransformers}
 
-/** @author Stephen Samuel */
-class ScoveragePlugin(val global: Global) extends Plugin {
+/** previous @author Stephen Samuel */
+class ScalafuzzPlugin(val global: Global) extends Plugin {
 
   override val name: String = "scalafuzz"
   override val description: String = "scalafuzz code coverage compiler plugin"
   private val (extraAfterPhase, extraBeforePhase) = processPhaseOptions(pluginOptions)
-  val instrumentationComponent = new ScoverageInstrumentationComponent(global, extraAfterPhase, extraBeforePhase)
+  val instrumentationComponent = new ScalafuzzInstrumentationComponent(global, extraAfterPhase, extraBeforePhase)
   override val components: List[PluginComponent] = List(instrumentationComponent)
 
   override def processOptions(opts: List[String], error: String => Unit): Unit = {
-    val options = new ScoverageOptions
+    val options = new ScalafuzzOptions
     for (opt <- opts) {
       if (opt.startsWith("excludedPackages:")) {
         options.excludedPackages = opt.substring("excludedPackages:".length).split(";").map(_.trim).filterNot(_.isEmpty)
@@ -41,12 +41,12 @@ class ScoveragePlugin(val global: Global) extends Plugin {
   }
 
   override val optionsHelp: Option[String] = Some(Seq(
-    "-P:scoverage:dataDir:<pathtodatadir>                  where the coverage files should be written\n",
-    "-P:scoverage:excludedPackages:<regex>;<regex>         semicolon separated list of regexs for packages to exclude",
-    "-P:scoverage:excludedFiles:<regex>;<regex>            semicolon separated list of regexs for paths to exclude",
-    "-P:scoverage:excludedSymbols:<regex>;<regex>          semicolon separated list of regexs for symbols to exclude",
-    "-P:scoverage:extraAfterPhase:<phaseName>              phase after which scoverage phase runs (must be after typer phase)",
-    "-P:scoverage:extraBeforePhase:<phaseName>             phase before which scoverage phase runs (must be before patmat phase)",
+    "-P:scalafuzz:dataDir:<pathtodatadir>                  where the coverage files should be written\n",
+    "-P:scalafuzz:excludedPackages:<regex>;<regex>         semicolon separated list of regexs for packages to exclude",
+    "-P:scalafuzz:excludedFiles:<regex>;<regex>            semicolon separated list of regexs for paths to exclude",
+    "-P:scalafuzz:excludedSymbols:<regex>;<regex>          semicolon separated list of regexs for symbols to exclude",
+    "-P:scalafuzz:extraAfterPhase:<phaseName>              phase after which scalafuzz phase runs (must be after typer phase)",
+    "-P:scalafuzz:extraBeforePhase:<phaseName>             phase before which scalafuzz phase runs (must be before patmat phase)",
     "                                                      Any classes whose fully qualified name matches the regex will",
     "                                                      be excluded from coverage."
   ).mkString("\n"))
@@ -73,14 +73,14 @@ class ScoveragePlugin(val global: Global) extends Plugin {
   }
 }
 
-class ScoverageOptions {
+class ScalafuzzOptions {
   var excludedPackages: Seq[String] = Nil
   var excludedFiles: Seq[String] = Nil
   var excludedSymbols: Seq[String] = Seq("scala.reflect.api.Exprs.Expr", "scala.reflect.api.Trees.Tree", "scala.reflect.macros.Universe.Tree")
   var dataDir: String = IOUtils.getTempPath
 }
 
-class ScoverageInstrumentationComponent(val global: Global, extraAfterPhase: Option[String], extraBeforePhase: Option[String])
+class ScalafuzzInstrumentationComponent(val global: Global, extraAfterPhase: Option[String], extraBeforePhase: Option[String])
   extends PluginComponent
     with TypingTransformers
     with Transform {
@@ -100,10 +100,10 @@ class ScoverageInstrumentationComponent(val global: Global, extraAfterPhase: Opt
     * You must call "setOptions" before running any commands that rely on
     * the options.
     */
-  private var options: ScoverageOptions = new ScoverageOptions()
+  private var options: ScalafuzzOptions = new ScalafuzzOptions()
   private var coverageFilter: CoverageFilter = AllCoverageFilter
 
-  def setOptions(options: ScoverageOptions): Unit = {
+  def setOptions(options: ScalafuzzOptions): Unit = {
     this.options = options
     coverageFilter = new RegexCoverageFilter(options.excludedPackages, options.excludedFiles, options.excludedSymbols)
     new File(options.dataDir).mkdirs() // ensure data directory is created

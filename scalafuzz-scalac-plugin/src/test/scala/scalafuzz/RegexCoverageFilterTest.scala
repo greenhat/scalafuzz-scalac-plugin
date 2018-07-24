@@ -60,7 +60,7 @@ class RegexCoverageFilterTest extends FreeSpec with Matchers with MockitoSugar {
     }
   }
   "isSymbolIncluded" - {
-    val options = new ScoverageOptions()
+    val options = new ScalafuzzOptions()
     "should return true for empty excludes" in {
       assert(new RegexCoverageFilter(Nil, Nil, Nil).isSymbolIncluded("x"))
     }

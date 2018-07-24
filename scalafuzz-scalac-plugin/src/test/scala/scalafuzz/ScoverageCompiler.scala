@@ -77,8 +77,8 @@ class ScoverageCompiler(settings: scala.tools.nsc.Settings, reporter: scala.tool
     settings.classpath.value = settings.classpath.value + File.pathSeparator + file.getAbsolutePath
   }
 
-  val instrumentationComponent = new ScoverageInstrumentationComponent(this, None, None)
-  instrumentationComponent.setOptions(new ScoverageOptions())
+  val instrumentationComponent = new ScalafuzzInstrumentationComponent(this, None, None)
+  instrumentationComponent.setOptions(new ScalafuzzOptions())
   val testStore = new ScoverageTestStoreComponent(this)
   val validator = new PositionValidator(this)
 
