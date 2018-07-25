@@ -1,0 +1,4 @@
+<plugin>
+    <name>scalafuzz</name>
+    <classname>scalafuzz.ScalafuzzPlugin</classname>
+</plugin>
