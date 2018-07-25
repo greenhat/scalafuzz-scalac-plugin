@@ -6,6 +6,7 @@ import sbtcrossproject.CrossProject
 import sbtcrossproject.CrossType
 
 val Org = "org.scalafuzz"
+val ProjectName = "scalafuzz-scalac"
 val PluginProjectName = "scalafuzz-scalac-plugin"
 val RuntimeProjectName = "scalafuzz-scalac-runtime"
 val MockitoVersion = "2.19.0"
@@ -56,8 +57,8 @@ val appSettings = Seq(
     releasePublishArtifactsAction := PgpKeys.publishSigned.value
   )
 
-lazy val root = Project(PluginProjectName, file("."))
-    .settings(name := PluginProjectName)
+lazy val root = Project(ProjectName, file("."))
+    .settings(name := ProjectName)
     .settings(appSettings: _*)
     .settings(publishArtifact := false)
     .settings(publishLocal := {})
