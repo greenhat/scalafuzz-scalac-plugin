@@ -19,7 +19,6 @@ class InvokerConcurrencyTest extends FunSuite with BeforeAndAfter {
   val measurementDir = new File("target/invoker-test.measurement")
 
   before {
-    deleteMeasurementFiles()
     measurementDir.mkdirs()
   }
 
@@ -27,30 +26,23 @@ class InvokerConcurrencyTest extends FunSuite with BeforeAndAfter {
 
     val testIds: Set[Int] = (1 to 1000).toSet
 
+    val dirStr = measurementDir.toString
     // Create 1k "invoked" calls on the common thread pool, to stress test
     // the method
     val futures: List[Future[Unit]] = testIds.map { i: Int =>
       Future {
-        Invoker.invoked(i, measurementDir.toString)
+        Invoker.invoked(i, dirStr)
       }
     }(breakOut)
 
     futures.foreach(Await.result(_, 1.second))
 
-    // Now verify that the measurement file is not corrupted by loading it
-    val measurementFiles = Invoker.findMeasurementFiles(measurementDir)
-    val idsFromFile = Invoker.invoked(measurementFiles).toSet
-
-    idsFromFile === testIds
+    val idsFromInvoker = Invoker.invocations()(dirStr).keys.toSet
+    idsFromInvoker === testIds
   }
 
   after {
-    deleteMeasurementFiles()
     measurementDir.delete()
   }
 
-  private def deleteMeasurementFiles(): Unit = {
-    if (measurementDir.isDirectory)
-      measurementDir.listFiles().foreach(_.delete())
-  }
 }
