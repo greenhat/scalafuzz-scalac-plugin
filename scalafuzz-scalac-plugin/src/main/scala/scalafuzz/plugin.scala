@@ -112,13 +112,12 @@ class ScalafuzzInstrumentationComponent(val global: Global, extraAfterPhase: Opt
   override def newPhase(prev: scala.tools.nsc.Phase): Phase = new Phase(prev) {
 
     override def run(): Unit = {
-      reporter.echo("[info] Beginning coverage instrumentation")
+      reporter.echo("[info] Beginning scalafuzz coverage instrumentation")
       super.run()
-      reporter.echo(s"[info] Instrumentation completed [${coverage.statements.size} statements]")
+      reporter.echo(s"[info] scalafuzz instrumentation completed [${coverage.statements.size} statements]")
 
       Serializer.serialize(coverage, Serializer.coverageFile(options.dataDir))
-      reporter.echo(s"[info] Wrote instrumentation file [${Serializer.coverageFile(options.dataDir)}]")
-      reporter.echo(s"[info] Will write measurement data to [${options.dataDir}]")
+      reporter.echo(s"[info] Wrote scalafuzz instrumentation file [${Serializer.coverageFile(options.dataDir)}]")
     }
   }
 
