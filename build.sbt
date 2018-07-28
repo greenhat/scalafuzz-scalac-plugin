@@ -9,6 +9,7 @@ val Org = "org.scalafuzz"
 val ProjectName = "scalafuzz-scalac"
 val PluginProjectName = "scalafuzz-scalac-plugin"
 val RuntimeProjectName = "scalafuzz-scalac-runtime"
+val LibProjectName = "scalafuzz-lib"
 val MockitoVersion = "2.19.0"
 val ScalatestVersion = "3.0.5-M1"
 
@@ -62,7 +63,7 @@ lazy val root = Project(ProjectName, file("."))
     .settings(appSettings: _*)
     .settings(publishArtifact := false)
     .settings(publishLocal := {})
-    .aggregate(plugin, runtime.jvm, runtime.js)
+    .aggregate(plugin, runtime.jvm, runtime.js, lib)
 
 lazy val runtime = CrossProject(RuntimeProjectName, file(RuntimeProjectName))(JVMPlatform, JSPlatform)
     .crossType(CrossType.Full)
@@ -102,3 +103,21 @@ lazy val plugin = Project(PluginProjectName, file(PluginProjectName))
       )
     }
   })
+
+lazy val lib = Project(LibProjectName, file(LibProjectName))
+  .dependsOn(`scalafuzz-scalac-runtimeJVM`)
+  .settings(name := LibProjectName)
+  .settings(appSettings: _*)
+  .settings(libraryDependencies ++= Seq(
+    "org.scalatest" %% "scalatest" % ScalatestVersion % "test",
+  )).settings(libraryDependencies ++= {
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, scalaMajor)) if scalaMajor > 10 => Seq(
+      "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0" % "test"
+    )
+    case _ => Seq(
+      "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2" % "test"
+    )
+  }
+})
