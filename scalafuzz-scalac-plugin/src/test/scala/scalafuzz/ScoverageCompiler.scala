@@ -101,7 +101,7 @@ class ScoverageCompiler(settings: scala.tools.nsc.Settings, reporter: scala.tool
   }
 
   def assertNoErrors() =
-    assert(!reporter.hasErrors, s"reporter errors: ${reporter.errorCount}")
+    assert(!reporter.hasErrors)
 
   def assertNoCoverage() =
     assert(!testStore.sources.mkString(" ").contains(s"scalafuzz.Invoker.invoked"))
