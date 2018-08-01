@@ -4,7 +4,7 @@ import scalafuzz.Platform.File
 
 import scala.concurrent.duration.Duration
 
-object Fuzzer {
+object Fuzzer extends ScalafuzzLogging {
 
   // todo extract?
   case class RunOptions(duration: RunDuration,
@@ -31,6 +31,7 @@ object Fuzzer {
                      corpusAddition: Option[File] = None) extends Failure
 
   def run(options: RunOptions, receiver: Array[Byte] => Unit): RunReport = {
+    log.info(s"starting a run with options: $options")
     var runCount: Long = 1
     while (true) {
       Invoker.reset()

@@ -71,12 +71,12 @@ lazy val runtime = CrossProject(RuntimeProjectName, file(RuntimeProjectName))(JV
     .settings(appSettings: _*)
     .jvmSettings(
       libraryDependencies ++= Seq(
-      "org.mockito" % "mockito-core" % MockitoVersion % "test",
-      "org.scalatest" %% "scalatest" % ScalatestVersion % "test"
+      "org.mockito" % "mockito-core" % MockitoVersion % Test,
+      "org.scalatest" %% "scalatest" % ScalatestVersion % Test
       )
     )
     .jsSettings(
-      libraryDependencies += "org.scalatest" %%% "scalatest" % ScalatestVersion % "test",
+      libraryDependencies += "org.scalatest" %%% "scalatest" % ScalatestVersion % Test,
       scalaJSStage := FastOptStage,
       inConfig(Test)(jsEnv := RhinoJSEnv().value)
     )
@@ -85,21 +85,21 @@ lazy val `scalafuzz-scalac-runtimeJVM` = runtime.jvm
 lazy val `scalafuzz-scalac-runtimeJS` = runtime.js
 
 lazy val plugin = Project(PluginProjectName, file(PluginProjectName))
-    .dependsOn(`scalafuzz-scalac-runtimeJVM` % "test")
+    .dependsOn(`scalafuzz-scalac-runtimeJVM` % Test)
     .settings(name := PluginProjectName)
     .settings(appSettings: _*)
     .settings(libraryDependencies ++= Seq(
-    "org.mockito" % "mockito-core" % MockitoVersion % "test",
-    "org.scalatest" %% "scalatest" % ScalatestVersion % "test",
+    "org.mockito" % "mockito-core" % MockitoVersion % Test,
+    "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
     "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
   )).settings(libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
       case Some((2, scalaMajor)) if scalaMajor > 10 => Seq(
         "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-        "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0" % "test"
+        "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0" % Test
       )
       case _ => Seq(
-        "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2" % "test"
+        "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2" % Test
       )
     }
   })
@@ -109,15 +109,16 @@ lazy val lib = Project(LibProjectName, file(LibProjectName))
   .settings(name := LibProjectName)
   .settings(appSettings: _*)
   .settings(libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % ScalatestVersion % "test",
+    "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
+    "ch.qos.logback" % "logback-classic" % "1.2.3" % Test,
   )).settings(libraryDependencies ++= {
   CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, scalaMajor)) if scalaMajor > 10 => Seq(
       "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0" % "test"
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
     )
     case _ => Seq(
-      "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2" % "test"
+      "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2"
     )
   }
 })
