@@ -37,7 +37,9 @@ class InvokerConcurrencyTest extends FunSuite with BeforeAndAfter {
 
     futures.foreach(Await.result(_, 1.second))
 
-    val idsFromInvoker = Invoker.invocations()(dirStr).keys.toSet
+    val idsFromInvoker = Invoker.invocations()(dirStr)
+      .toArray
+      .map(_.asInstanceOf[Invoker.Invocation].invocationId)
     idsFromInvoker === testIds
   }
 
