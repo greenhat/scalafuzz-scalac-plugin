@@ -118,7 +118,8 @@ lazy val lib = Project(LibProjectName, file(LibProjectName))
       "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
     )
     case _ => Seq(
-      "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2"
+      "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
     )
   }
 })
