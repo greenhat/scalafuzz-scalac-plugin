@@ -16,7 +16,7 @@ val ScalatestVersion = "3.0.5-M1"
 val appSettings = Seq(
     organization := Org,
     scalaVersion := "2.12.4",
-    crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.4", "2.13.0-M3"),
+    crossScalaVersions := Seq("2.11.12", "2.12.4", "2.13.0-M3"),
     fork in Test := false,
     publishMavenStyle := true,
     publishArtifact in Test := false,
@@ -89,37 +89,20 @@ lazy val plugin = Project(PluginProjectName, file(PluginProjectName))
     .settings(name := PluginProjectName)
     .settings(appSettings: _*)
     .settings(libraryDependencies ++= Seq(
-    "org.mockito" % "mockito-core" % MockitoVersion % Test,
-    "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
-    "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
-  )).settings(libraryDependencies ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, scalaMajor)) if scalaMajor > 10 => Seq(
-        "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-        "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0" % Test
-      )
-      case _ => Seq(
-        "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2" % Test
-      )
-    }
-  })
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+      "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+      "org.mockito" % "mockito-core" % MockitoVersion % Test,
+      "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0" % Test
+    ))
 
 lazy val lib = Project(LibProjectName, file(LibProjectName))
   .dependsOn(`scalafuzz-scalac-runtimeJVM`)
   .settings(name := LibProjectName)
   .settings(appSettings: _*)
   .settings(libraryDependencies ++= Seq(
+    "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
     "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.2.3" % Test,
-  )).settings(libraryDependencies ++= {
-  CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, scalaMajor)) if scalaMajor > 10 => Seq(
-      "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
-    )
-    case _ => Seq(
-      "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2",
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.+"
-    )
-  }
-})
+  ))
