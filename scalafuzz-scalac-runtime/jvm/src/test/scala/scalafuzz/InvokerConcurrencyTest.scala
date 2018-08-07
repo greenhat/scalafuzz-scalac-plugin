@@ -39,7 +39,7 @@ class InvokerConcurrencyTest extends FunSuite with BeforeAndAfter {
 
     val idsFromInvoker = Invoker.invocations()(dirStr)
       .toArray
-      .map(_.asInstanceOf[Invoker.Invocation].invocationId)
+      .map(_.asInstanceOf[Invoker.InvocationId])
     idsFromInvoker === testIds
   }
 

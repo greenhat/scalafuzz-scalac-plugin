@@ -1,7 +1,6 @@
 package scalafuzz
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicInteger
 
 import scalafuzz.Platform._
 
@@ -10,41 +9,19 @@ object Invoker {
 
   type DataDir = String
   type InvocationId = Int
-  type ThreadId = Long
-  type ThreadIdIndex = Short
 
   type ThreadSafeQueue[A] = ConcurrentLinkedQueue[A]
 
-  case class Invocation(threadIdIndex: ThreadIdIndex, invocationId: InvocationId)
-
   private val dataDirToIds =
-    ThreadSafeMap.empty[DataDir, ThreadSafeQueue[Invocation]]
-
-  // to store 2 bytes per invocation instead of 8
-  private val threadIndices = ThreadSafeMap.empty[ThreadId, ThreadIdIndex]
-
-  private var freeThreadIndex = new AtomicInteger()
+    ThreadSafeMap.empty[DataDir, ThreadSafeQueue[InvocationId]]
 
   @inline
-  private def threadIndex(threadId: ThreadId): ThreadIdIndex = {
-    if (!threadIndices.contains(threadId)) {
-      // Guard against SI-7943: "TrieMap method getOrElseUpdate is not thread-safe".
-      threadIndices.synchronized {
-        if (!threadIndices.contains(threadId)) {
-          threadIndices(threadId) = freeThreadIndex.getAndIncrement().toShort
-        }
-      }
-    }
-    threadIndices(threadId)
-  }
-
-  @inline
-  private def invocationQueue(dataDir: DataDir): ThreadSafeQueue[Invocation] = {
+  private def invocationQueue(dataDir: DataDir): ThreadSafeQueue[InvocationId] = {
     if (!dataDirToIds.contains(dataDir)) {
       // Guard against SI-7943: "TrieMap method getOrElseUpdate is not thread-safe".
       dataDirToIds.synchronized {
         if (!dataDirToIds.contains(dataDir)) {
-          dataDirToIds(dataDir) = new ThreadSafeQueue[Invocation]()
+          dataDirToIds(dataDir) = new ThreadSafeQueue[InvocationId]()
         }
       }
     }
@@ -60,15 +37,13 @@ object Invoker {
     * @param dataDir the directory where the measurement data is held
    */
   def invoked(id: InvocationId, dataDir: DataDir): Unit = {
-    invocationQueue(dataDir).add(Invocation(threadIndex(Thread.currentThread.getId), id))
+    invocationQueue(dataDir).add(id)
   }
 
-  def invocations(): ThreadSafeMap[DataDir, ThreadSafeQueue[Invocation]]=
+  def invocations(): ThreadSafeMap[DataDir, ThreadSafeQueue[InvocationId]]=
     dataDirToIds
 
   def reset(): Unit = {
-    freeThreadIndex = new AtomicInteger()
-    threadIndices.clear()
     dataDirToIds.clear()
   }
 }
