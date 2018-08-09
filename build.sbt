@@ -98,6 +98,7 @@ lazy val plugin = Project(PluginProjectName, file(PluginProjectName))
 
 lazy val lib = Project(LibProjectName, file(LibProjectName))
   .dependsOn(`scalafuzz-scalac-runtimeJVM`)
+  .dependsOn(plugin)
   .settings(name := LibProjectName)
   .settings(appSettings: _*)
   .settings(libraryDependencies ++= Seq(

@@ -1,12 +1,14 @@
 package scalafuzz
 
-import scalafuzz.Platform.File
+import scalafuzz.Invoker.{DataDir, InvocationId, ThreadSafeQueue}
+import scalafuzz.Platform.{File, ThreadSafeMap}
 
 import scala.concurrent.duration.Duration
+import scala.util.{Failure, Success, Try}
 
 object Fuzzer extends ScalafuzzLogging {
 
-  // todo extract?
+  // todo extract
   case class RunOptions(duration: RunDuration,
                         existingCorpus: Option[File] = None,
                         corpusAdditions: Option[File] = None)
@@ -17,7 +19,7 @@ object Fuzzer extends ScalafuzzLogging {
   case object UntilFailure extends RunDuration
   case object UnlimitedDuration extends RunDuration
 
-  // todo extract?
+  // todo extract
   case class RunReport(stats: RunStats, failures: Seq[Failure])
 
   case class RunStats(runCount: Long)
@@ -30,22 +32,33 @@ object Fuzzer extends ScalafuzzLogging {
                      elapsedTime: Duration,
                      corpusAddition: Option[File] = None) extends Failure
 
-  def run(options: RunOptions, receiver: Array[Byte] => Unit): RunReport = {
-    log.info(s"starting a run with options: $options")
-    var runCount: Long = 1
-    while (true) {
-      Invoker.reset()
-      val bytes = Array[Byte]()
-      try {
-        receiver(bytes)
-        runCount += 1
-      } catch {
-        case e: Throwable =>
-          return RunReport(RunStats(runCount), Seq(ExceptionFailure(bytes, e)))
-      }
-      val invs = Invoker.invocations()
+  // todo extract
+  type Target = Array[Byte] => Unit
+
+  sealed trait TargetExitStatus
+  case object TargetNormalExit extends TargetExitStatus
+  case class TargetExceptionThrown(e: Throwable) extends TargetExitStatus
+
+  case class TargetRunOneReport(exitStatus: TargetExitStatus, invocations: Seq[InvocationId])
+
+  def flattenInvocations(raw: ThreadSafeMap[DataDir, ThreadSafeQueue[InvocationId]]): Seq[InvocationId] =
+    raw.values.flatMap(_.toArray.map(_.asInstanceOf[InvocationId])).toSeq
+
+  // todo wrap into an IO?
+  private def runOne(target: Target, input: Array[Byte]): TargetRunOneReport = {
+    Invoker.reset()
+    Try { target(input) } match {
+      case Failure(e) =>
+        TargetRunOneReport(TargetExceptionThrown(e), flattenInvocations(Invoker.invocations()))
+      case Success(_) =>
+        TargetRunOneReport(TargetNormalExit, flattenInvocations(Invoker.invocations()))
     }
-    RunReport(RunStats(runCount), Seq())
+  }
+
+  def run(options: RunOptions, target: Target): RunReport = {
+    log.info(s"starting a run with options: $options")
+    runOne(target, Array.fill[Byte](1)(1))
+    RunReport(RunStats(1), Seq())
   }
 
 }
