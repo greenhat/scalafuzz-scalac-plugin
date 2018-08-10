@@ -101,9 +101,20 @@ lazy val lib = Project(LibProjectName, file(LibProjectName))
   .dependsOn(plugin)
   .settings(name := LibProjectName)
   .settings(appSettings: _*)
+  .settings(
+    scalacOptions := Seq(
+    "-deprecation",
+    "-encoding",
+    "UTF-8",
+    "-feature",
+    "-language:existentials",
+    "-language:higherKinds",
+    "-Ypartial-unification"
+  ))
   .settings(libraryDependencies ++= Seq(
     "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
     "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
+    "org.typelevel" %% "cats-effect" % "1.0.0-RC2",
     "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
     "ch.qos.logback" % "logback-classic" % "1.2.3" % Test,
   ))

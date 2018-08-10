@@ -1,7 +1,6 @@
 package scalafuzz
 
 import org.scalatest.{FunSuite, Matchers}
-import scalafuzz.Fuzzer.{ExceptionFailure, RunOptions, TimedDuration, UntilFailure}
 
 import scala.concurrent.duration._
 
@@ -9,12 +8,15 @@ class FuzzerTest extends FunSuite
   with Matchers {
 
   test("receiver throws") {
-    val options = RunOptions(TimedDuration(3.hours))
+    val options = FuzzerOptions(
+      TimedDuration(3.hours),
+      exitOnFirstFailure = true)
     val report = Fuzzer.run(options, { _ =>
+      println("")
       throw new RuntimeException("catch me")
     })
     report.stats.runCount shouldBe 1
-//    report.failures.length shouldBe 1
+    report.failures.length shouldBe 1
   }
 
 }
