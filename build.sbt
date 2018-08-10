@@ -9,13 +9,14 @@ val Org = "org.scalafuzz"
 val ProjectName = "scalafuzz-scalac"
 val PluginProjectName = "scalafuzz-scalac-plugin"
 val RuntimeProjectName = "scalafuzz-scalac-runtime"
+val LibProjectName = "scalafuzz-lib"
 val MockitoVersion = "2.19.0"
 val ScalatestVersion = "3.0.5-M1"
 
 val appSettings = Seq(
     organization := Org,
     scalaVersion := "2.12.4",
-    crossScalaVersions := Seq("2.10.7", "2.11.12", "2.12.4", "2.13.0-M3"),
+    crossScalaVersions := Seq("2.11.12", "2.12.4"),
     fork in Test := false,
     publishMavenStyle := true,
     publishArtifact in Test := false,
@@ -62,7 +63,7 @@ lazy val root = Project(ProjectName, file("."))
     .settings(appSettings: _*)
     .settings(publishArtifact := false)
     .settings(publishLocal := {})
-    .aggregate(plugin, runtime.jvm, runtime.js)
+    .aggregate(plugin, runtime.jvm, runtime.js, lib)
 
 lazy val runtime = CrossProject(RuntimeProjectName, file(RuntimeProjectName))(JVMPlatform, JSPlatform)
     .crossType(CrossType.Full)
@@ -70,12 +71,12 @@ lazy val runtime = CrossProject(RuntimeProjectName, file(RuntimeProjectName))(JV
     .settings(appSettings: _*)
     .jvmSettings(
       libraryDependencies ++= Seq(
-      "org.mockito" % "mockito-core" % MockitoVersion % "test",
-      "org.scalatest" %% "scalatest" % ScalatestVersion % "test"
+      "org.mockito" % "mockito-core" % MockitoVersion % Test,
+      "org.scalatest" %% "scalatest" % ScalatestVersion % Test
       )
     )
     .jsSettings(
-      libraryDependencies += "org.scalatest" %%% "scalatest" % ScalatestVersion % "test",
+      libraryDependencies += "org.scalatest" %%% "scalatest" % ScalatestVersion % Test,
       scalaJSStage := FastOptStage,
       inConfig(Test)(jsEnv := RhinoJSEnv().value)
     )
@@ -84,21 +85,36 @@ lazy val `scalafuzz-scalac-runtimeJVM` = runtime.jvm
 lazy val `scalafuzz-scalac-runtimeJS` = runtime.js
 
 lazy val plugin = Project(PluginProjectName, file(PluginProjectName))
-    .dependsOn(`scalafuzz-scalac-runtimeJVM` % "test")
+    .dependsOn(`scalafuzz-scalac-runtimeJVM` % Test)
     .settings(name := PluginProjectName)
     .settings(appSettings: _*)
     .settings(libraryDependencies ++= Seq(
-    "org.mockito" % "mockito-core" % MockitoVersion % "test",
-    "org.scalatest" %% "scalatest" % ScalatestVersion % "test",
-    "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided"
-  )).settings(libraryDependencies ++= {
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, scalaMajor)) if scalaMajor > 10 => Seq(
-        "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
-        "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0" % "test"
-      )
-      case _ => Seq(
-        "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.1.2" % "test"
-      )
-    }
-  })
+      "org.scala-lang" % "scala-compiler" % scalaVersion.value % "provided",
+      "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+      "org.mockito" % "mockito-core" % MockitoVersion % Test,
+      "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0" % Test
+    ))
+
+lazy val lib = Project(LibProjectName, file(LibProjectName))
+  .dependsOn(`scalafuzz-scalac-runtimeJVM`)
+  .dependsOn(plugin)
+  .settings(name := LibProjectName)
+  .settings(appSettings: _*)
+  .settings(
+    scalacOptions := Seq(
+    "-deprecation",
+    "-encoding",
+    "UTF-8",
+    "-feature",
+    "-language:existentials",
+    "-language:higherKinds",
+    "-Ypartial-unification"
+  ))
+  .settings(libraryDependencies ++= Seq(
+    "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
+    "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
+    "org.typelevel" %% "cats-effect" % "1.0.0-RC2",
+    "org.scalatest" %% "scalatest" % ScalatestVersion % Test,
+    "ch.qos.logback" % "logback-classic" % "1.2.3" % Test,
+  ))

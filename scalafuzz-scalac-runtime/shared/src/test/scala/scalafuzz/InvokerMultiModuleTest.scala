@@ -25,11 +25,16 @@ class InvokerMultiModuleTest extends FunSuite with BeforeAndAfter {
     testIds.map { i: Int => Invoker.invoked(i, measurementDir(i % 2).toString) }
 
     // Verify measurements went to correct directory
-    val idsFromFile0 = Invoker.invocations()(measurementDir(0).toString).keys.toSet
+    val idsFromFile0 = Invoker.invocations()(measurementDir(0).toString)
+      .toArray
+      .map(_.asInstanceOf[Invoker.InvocationId])
 
     idsFromFile0 === testIds.filter { i: Int => i % 2 == 0 }
 
-    val idsFromFile1 = Invoker.invocations()(measurementDir(1).toString).keys.toSet
+    val idsFromFile1 = Invoker.invocations()(measurementDir(1).toString)
+      .toArray
+      .map(_.asInstanceOf[Invoker.InvocationId])
+
     idsFromFile1 === testIds.filter { i: Int => i % 2 == 1 }
   }
 

@@ -4,13 +4,7 @@ import java.io.{File, FileNotFoundException}
 
 trait ScalaLoggingSupport {
 
-  val scalaLoggingPackageName: String = if (ScoverageCompiler.ShortScalaVersion == "2.10") {
-    "com.typesafe.scalalogging.slf4j"
-  }
-  else {
-    "com.typesafe.scalalogging"
-  }
-
+  val scalaLoggingPackageName: String = "com.typesafe.scalalogging"
   lazy val scalaLoggingDeps: Seq[File] = {
     if (ScoverageCompiler.ShortScalaVersion == "2.10") {
       Seq(
