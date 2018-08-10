@@ -21,7 +21,7 @@ private[scalafuzz] object Runner {
   case object TargetNormalExit extends TargetExitStatus
   case class TargetExceptionThrown(e: Throwable) extends TargetExitStatus
 
-  case class TargetRunOneReport(exitStatus: TargetExitStatus, invocations: Seq[InvocationId])
+  case class TargetRunOneReport(input: Array[Byte], exitStatus: TargetExitStatus, invocations: Seq[InvocationId])
 
   def flattenInvocations(raw: ThreadSafeMap[DataDir, ThreadSafeQueue[InvocationId]]): Seq[InvocationId] =
     raw.values.flatMap(_.toArray.map(_.asInstanceOf[InvocationId])).toSeq
@@ -32,9 +32,9 @@ private[scalafuzz] object Runner {
     Invoker.reset()
     Try { target(input) } match {
       case Failure(e) =>
-        TargetRunOneReport(TargetExceptionThrown(e), flattenInvocations(Invoker.invocations()))
+        TargetRunOneReport(input, TargetExceptionThrown(e), flattenInvocations(Invoker.invocations()))
       case Success(_) =>
-        TargetRunOneReport(TargetNormalExit, flattenInvocations(Invoker.invocations()))
+        TargetRunOneReport(input, TargetNormalExit, flattenInvocations(Invoker.invocations()))
     }
   }
 
@@ -43,17 +43,22 @@ private[scalafuzz] object Runner {
       // todo submit the report for analysis
       report.exitStatus match {
         case TargetExceptionThrown(e) if options.exitOnFirstFailure =>
-          IO.pure(FuzzerReport(RunStats(1), Seq(ExceptionFailure(bytesSource(), e))))
+          IO.pure(FuzzerReport(RunStats(1), Seq(ExceptionFailure(report.input, e))))
         case _ =>
           loop(options, target, inputSource)
       }
     }
 
-  // todo generate the list of mutation _descriptions_ and execute them passing the bytes from the seed
-  private def bytesSource(): Array[Byte] = Array.fill[Byte](1)(1)
+  // todo extract
+  sealed trait Mutation
+  case object RandomBytes extends Mutation
+
+  // todo generate a stream of mutation descriptions and execute them passing the bytes from the seed
+  def mutateBytes(input: Array[Byte], mutation: Mutation): Array[Byte] = Array.fill[Byte](1)(1)
+  def randomBytes(): Array[Byte] = Array.fill[Byte](1)(1)
 
   def program(options: FuzzerOptions, target: Target): IO[FuzzerReport] = for {
-    report <- loop(options, target, bytesSource)
+    report <- loop(options, target, () => mutateBytes(randomBytes(), RandomBytes) )
   } yield report
 
   //  def program[F[_]: Log](options: RunOptions, target: Target)(implicit L: Log[F]): IO[RunReport] = for {
