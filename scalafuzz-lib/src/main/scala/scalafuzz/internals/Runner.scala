@@ -1,6 +1,8 @@
 package scalafuzz.internals
 
+import cats.Monad
 import cats.effect.IO
+import cats.syntax.flatMap._
 import scalafuzz.Fuzzer.Target
 import scalafuzz.Invoker.{DataDir, InvocationId, ThreadSafeQueue}
 import scalafuzz.Platform.ThreadSafeMap
@@ -49,6 +51,8 @@ private[scalafuzz] object Runner {
       }
     }
 
+  def loopTF[F[_]](options: FuzzerOptions, target: Target, inputSource: () => Array[Byte]): F[FuzzerReport] = ???
+
   // todo extract
   sealed trait Mutation
   case object RandomBytes extends Mutation
@@ -61,9 +65,9 @@ private[scalafuzz] object Runner {
     report <- loop(options, target, () => mutateBytes(randomBytes(), RandomBytes) )
   } yield report
 
-  //  def program[F[_]: Log](options: RunOptions, target: Target)(implicit L: Log[F]): IO[RunReport] = for {
-  //    _ <- L.info(s"starting a run with options: $options")
-  //    runReport = RunReport(RunStats(1), Seq())
-  //  } yield runReport
+  def programTF[F[_]: Monad](options: FuzzerOptions, target: Target)(implicit L: Log[F]): F[FuzzerReport] = for {
+    _ <- L.info(s"starting a run with options: $options")
+    report <- loopTF(options, target, () => mutateBytes(randomBytes(), RandomBytes))
+  } yield report
 
-}
+          }

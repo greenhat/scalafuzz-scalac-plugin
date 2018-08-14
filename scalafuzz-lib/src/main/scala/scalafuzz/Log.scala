@@ -1,6 +1,6 @@
 package scalafuzz
 
-import cats.effect.Sync
+import cats.effect.{IO, Sync}
 import org.slf4j.LoggerFactory
 
 trait Log[F[_]] {
@@ -8,12 +8,14 @@ trait Log[F[_]] {
   def error(e: Throwable): F[Unit]
 }
 object Log {
+  def apply[F[_]](implicit ev: Log[F]): Log[F] = ev
+  object io extends SyncLog[IO]
+}
+
+class SyncLog[F[_]](implicit F: Sync[F]) extends Log[F] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  implicit def syncLogInstance[F[_]](implicit F: Sync[F]): Log[F] =
-    new Log[F] {
-      override def error(error: Throwable): F[Unit] = F.delay(logger.error(error.getMessage, error))
-      override def info(value: String): F[Unit] = F.delay(logger.info(value))
-    }
+  override def info(s: String): F[Unit] = F.delay(logger.info(s))
+  override def error(e: Throwable): F[Unit] = F.delay(logger.error(e.getMessage, e))
 }
 
