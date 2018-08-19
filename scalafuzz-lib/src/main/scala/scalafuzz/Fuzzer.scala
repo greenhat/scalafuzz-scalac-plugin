@@ -1,12 +1,12 @@
 package scalafuzz
 
-object Fuzzer {
-  import internals.Runner._
+import scalafuzz.internals.{IOLoop, Runner}
 
+object Fuzzer {
   type Target = Array[Byte] => Unit
 
   def run(options: FuzzerOptions, target: Target): FuzzerReport = {
-    program(options, target).unsafeRunSync()
+    new Runner(new IOLoop, Log.io).program(options, target).unsafeRunSync()
   }
 
 }
