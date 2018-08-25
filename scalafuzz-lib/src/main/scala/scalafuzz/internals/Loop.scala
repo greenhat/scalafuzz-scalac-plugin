@@ -8,11 +8,14 @@ import scalafuzz._
 
 import scala.util.{Failure, Success, Try}
 
-trait Loop[F[_]] {
-  def run(options: FuzzerOptions, target: Target, inputSource: () => Array[Byte]): F[FuzzerReport]
+trait Loop[F[_], G[_]] {
+  def run(options: FuzzerOptions,
+          target: Target,
+          inputSource: () => Array[Byte],
+          reportAnalyzer: TargetRunReportAnalyzer[G]): F[FuzzerReport]
 }
 
-class IOLoop extends Loop[IO] {
+class IOLoop[G[_]] extends Loop[IO, G] {
 
   private def flattenInvocations(raw: ThreadSafeMap[DataDir, ThreadSafeQueue[InvocationId]]): Seq[InvocationId] =
     raw.values.flatMap(_.toArray.map(_.asInstanceOf[InvocationId])).toSeq
@@ -28,14 +31,16 @@ class IOLoop extends Loop[IO] {
   }
 
   override def run(options: FuzzerOptions,
-                   target: Target, inputSource: () => Array[Byte]): IO[FuzzerReport] =
+                   target: Target,
+                   inputSource: () => Array[Byte],
+                   reportAnalyzer: TargetRunReportAnalyzer[G]): IO[FuzzerReport] =
     IO(runOne(target, inputSource())).flatMap { report: TargetRunReport =>
-      // todo submit the report for analysis
+      reportAnalyzer.process(report)
       report.exitStatus match {
         case TargetExceptionThrown(e) if options.exitOnFirstFailure =>
           IO.pure(FuzzerReport(RunStats(1), Seq(ExceptionFailure(report.input, e))))
         case _ =>
-          run(options, target, inputSource)
+          run(options, target, inputSource, reportAnalyzer)
       }
     }
 }
