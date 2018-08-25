@@ -11,7 +11,7 @@ import scala.util.{Failure, Success, Try}
 trait Loop[F[_], G[_]] {
   def run(options: FuzzerOptions,
           target: Target,
-          inputSource: () => Array[Byte],
+          mutatorGen: Mutator,
           reportAnalyzer: TargetRunReportAnalyzer[G]): F[FuzzerReport]
 }
 
@@ -32,15 +32,15 @@ class IOLoop[G[_]] extends Loop[IO, G] {
 
   override def run(options: FuzzerOptions,
                    target: Target,
-                   inputSource: () => Array[Byte],
+                   mutatorGen: Mutator,
                    reportAnalyzer: TargetRunReportAnalyzer[G]): IO[FuzzerReport] =
-    IO(runOne(target, inputSource())).flatMap { report: TargetRunReport =>
+    IO(runOne(target, mutatorGen.mutatedBytes())).flatMap { report: TargetRunReport =>
       reportAnalyzer.process(report)
       report.exitStatus match {
         case TargetExceptionThrown(e) if options.exitOnFirstFailure =>
           IO.pure(FuzzerReport(RunStats(1), Seq(ExceptionFailure(report.input, e))))
         case _ =>
-          run(options, target, inputSource, reportAnalyzer)
+          run(options, target, mutatorGen.next(report.input), reportAnalyzer)
       }
     }
 }
