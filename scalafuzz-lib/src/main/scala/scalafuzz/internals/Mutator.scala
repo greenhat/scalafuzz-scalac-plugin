@@ -8,7 +8,6 @@ object Mutator {
   sealed trait Mutation
   case object RandomBytes extends Mutation
 
-  // todo generate a stream of mutation descriptions and execute them passing the bytes from the seed
 }
 
 trait Mutator {
@@ -22,7 +21,8 @@ class StreamMutator(input: Array[Byte], mutations: NonEmptyList[Mutation]) exten
   override def mutatedBytes(): Array[Byte] = input
 
   override def next(input: Array[Byte]): Mutator =
-    new StreamMutator(applyMutation(input, mutations.head),
+    new StreamMutator(
+      mutate(input, mutations.head),
       mutations.tail match {
         case Nil =>
           NonEmptyList.one(mutations.head)
@@ -36,10 +36,10 @@ class StreamMutator(input: Array[Byte], mutations: NonEmptyList[Mutation]) exten
 object StreamMutator {
 
   def seedRandom(): StreamMutator =
-    new StreamMutator(applyMutation(new Array[Byte](1), RandomBytes),
+    new StreamMutator(mutate(new Array[Byte](1), RandomBytes),
       NonEmptyList.one(RandomBytes))
 
-  def applyMutation(input: Array[Byte], mutation: Mutation): Array[Byte] = mutation match {
+  def mutate(input: Array[Byte], mutation: Mutation): Array[Byte] = mutation match {
     case Mutator.RandomBytes =>
       // todo proper random bytes
       Array.fill[Byte](1)(1)
