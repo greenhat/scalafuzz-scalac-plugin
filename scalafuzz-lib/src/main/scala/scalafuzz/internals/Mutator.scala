@@ -1,17 +1,7 @@
 package scalafuzz.internals
 
 import cats.data.NonEmptyList
-import scalafuzz.internals.Mutations.{Mutation, randomBytes}
-
-object Mutations {
-
-  type Mutation = Array[Byte] => Array[Byte]
-
-  def randomBytes: Mutation = { _ =>
-    // todo proper random
-    Array.fill[Byte](1)(1)
-  }
-}
+import scalafuzz.internals.mutations.Mutations.{Mutation, randomBytes}
 
 trait Mutator {
   def mutatedBytes(): Array[Byte]
