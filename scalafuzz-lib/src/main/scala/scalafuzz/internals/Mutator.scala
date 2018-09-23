@@ -1,13 +1,16 @@
 package scalafuzz.internals
 
 import cats.data.NonEmptyList
-import scalafuzz.internals.Mutator.{Mutation, RandomBytes}
+import scalafuzz.internals.Mutations.{Mutation, randomBytes}
 
-object Mutator {
+object Mutations {
 
-  sealed trait Mutation
-  case object RandomBytes extends Mutation
+  type Mutation = Array[Byte] => Array[Byte]
 
+  def randomBytes: Mutation = { _ =>
+    // todo proper random
+    Array.fill[Byte](1)(1)
+  }
 }
 
 trait Mutator {
@@ -15,33 +18,24 @@ trait Mutator {
   def next(input: Array[Byte]): Mutator
 }
 
-class StreamMutator(input: Array[Byte], mutations: NonEmptyList[Mutation]) extends Mutator {
-  import StreamMutator._
+class StreamedMutator(input: Array[Byte], mutations: NonEmptyList[Mutation]) extends Mutator {
 
   override def mutatedBytes(): Array[Byte] = input
 
   override def next(input: Array[Byte]): Mutator =
-    new StreamMutator(
-      mutate(input, mutations.head),
+    new StreamedMutator(
+      mutations.head(input),
       mutations.tail match {
         case Nil =>
           NonEmptyList.one(mutations.head)
         case tail =>
-          // todo unsafe? meh
           NonEmptyList.fromListUnsafe(tail)
       }
     )
 }
 
-object StreamMutator {
+object StreamedMutator {
 
-  def seedRandom(): StreamMutator =
-    new StreamMutator(mutate(new Array[Byte](1), RandomBytes),
-      NonEmptyList.one(RandomBytes))
-
-  def mutate(input: Array[Byte], mutation: Mutation): Array[Byte] = mutation match {
-    case Mutator.RandomBytes =>
-      // todo proper random bytes
-      Array.fill[Byte](1)(1)
-  }
+  def seedRandom(): StreamedMutator =
+    new StreamedMutator(randomBytes(new Array[Byte](1)), NonEmptyList.one(randomBytes))
 }
