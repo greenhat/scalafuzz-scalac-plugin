@@ -41,4 +41,16 @@ class FuzzerTest extends FunSuite
     report.stats.runCount shouldBe 1
   }
 
+  test("new runner") {
+    val options = FuzzerOptions(
+      TimedDuration(3.hours),
+      exitOnFirstFailure = true)
+    val reports = Fuzzer.run2(options, { bytes =>
+      bytes.isEmpty shouldBe true
+      throw new RuntimeException("catch me")
+    })
+    reports.flatMap(_.failures).length shouldBe 1
+  }
+
+
 }

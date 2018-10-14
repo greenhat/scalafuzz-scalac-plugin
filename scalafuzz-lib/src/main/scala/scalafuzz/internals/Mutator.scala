@@ -33,4 +33,7 @@ object StreamedMutator {
   def ioSeeded(seed: Array[Byte]): StreamedMutator[IO] =
     new StreamedMutator(IO.pure(seed), NonEmptyList.one(randomBytes))
 
+  // todo parametrize randomBytes with effect (F)?
+  def seeded[F[_]](seed: F[Array[Byte]]): StreamedMutator[F] = ???
+
 }

@@ -13,4 +13,12 @@ object Fuzzer {
       new IOTargetRunReportAnalyzer()).program(options, target).unsafeRunSync()
   }
 
+  def run2(options: FuzzerOptions, target: Target): Seq[FuzzerReport] = {
+    new Runner(new IOLoop(),
+      new IOCorpus(),
+      StreamedMutator.ioSeeded(Array.emptyByteArray),
+      Log.io,
+      new IOTargetRunReportAnalyzer()).program2(options, target).unsafeRunSync()
+  }
+
 }

@@ -1,12 +1,19 @@
 package scalafuzz.internals
 
 import cats.effect.IO
+import scalafuzz.internals.Corpus.CorpusItem
+
 
 trait Corpus[F[_]] {
 
-  def load: Seq[F[Array[Byte]]]
-  def add(input: Array[Byte]): F[Unit]
+  def load: Seq[F[CorpusItem]]
+  def add(input: CorpusItem): F[Unit]
+  def added: Seq[F[CorpusItem]]
   def needsReload: Boolean
+}
+
+object Corpus {
+  type CorpusItem = Array[Byte]
 }
 
 class IOCorpus extends Corpus[IO] {
@@ -25,5 +32,6 @@ class IOCorpus extends Corpus[IO] {
 
   override def add(input: Array[Byte]): IO[Unit] = ???
 
+  override def added: Seq[IO[CorpusItem]] = ???
 }
 
