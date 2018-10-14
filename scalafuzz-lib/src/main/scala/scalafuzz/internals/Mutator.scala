@@ -1,7 +1,9 @@
 package scalafuzz.internals
 
+import cats.Functor
 import cats.data.NonEmptyList
 import cats.effect.IO
+import cats.syntax.functor._
 import scalafuzz.internals.mutations.Mutations.{Mutation, randomBytes}
 
 trait Mutator[F[_]]{
@@ -9,12 +11,12 @@ trait Mutator[F[_]]{
   def next(input: Array[Byte]): Mutator[F]
 }
 
-class StreamedMutator(bytes: IO[Array[Byte]], mutations: NonEmptyList[IO[Mutation]]) extends Mutator[IO] {
+class StreamedMutator[F[_] : Functor](bytes: F[Array[Byte]], mutations: NonEmptyList[F[Mutation]]) extends Mutator[F] {
 
-  override def mutatedBytes(): IO[Array[Byte]] = bytes
+  override def mutatedBytes(): F[Array[Byte]] = bytes
 
   // todo: extract "endless" list
-  override def next(input: Array[Byte]): Mutator[IO] =
+  override def next(input: Array[Byte]): Mutator[F] =
     new StreamedMutator(
       mutations.head.map(m => m(input)),
       mutations.tail match {
@@ -28,7 +30,7 @@ class StreamedMutator(bytes: IO[Array[Byte]], mutations: NonEmptyList[IO[Mutatio
 
 object StreamedMutator {
 
-  def seed(seed: Array[Byte]): StreamedMutator =
+  def ioSeeded(seed: Array[Byte]): StreamedMutator[IO] =
     new StreamedMutator(IO.pure(seed), NonEmptyList.one(randomBytes))
 
 }
