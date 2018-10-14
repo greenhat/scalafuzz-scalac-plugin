@@ -14,7 +14,6 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
   /*
    todo:
   Initial stage:
-- run target with an empty input;
 - load inputs from Corpus;
 - run each input (w/o mutations) through the target;
    */

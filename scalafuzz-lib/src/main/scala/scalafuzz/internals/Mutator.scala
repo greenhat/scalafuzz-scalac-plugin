@@ -28,6 +28,7 @@ class StreamedMutator(bytes: IO[Array[Byte]], mutations: NonEmptyList[IO[Mutatio
 
 object StreamedMutator {
 
-  def seed(seed: IO[Array[Byte]]): StreamedMutator =
-    new StreamedMutator(seed, NonEmptyList.one(randomBytes))
+  def seed(seed: Array[Byte]): StreamedMutator =
+    new StreamedMutator(IO.pure(seed), NonEmptyList.one(randomBytes))
+
 }
