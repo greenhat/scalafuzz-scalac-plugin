@@ -1,20 +1,22 @@
 package scalafuzz.internals
 
 import cats.data.NonEmptyList
+import cats.effect.IO
 import scalafuzz.internals.mutations.Mutations.{Mutation, randomBytes}
 
-trait Mutator {
-  def mutatedBytes(): Array[Byte]
-  def next(input: Array[Byte]): Mutator
+trait Mutator[F[_]]{
+  def mutatedBytes(): F[Array[Byte]]
+  def next(input: Array[Byte]): Mutator[F]
 }
 
-class StreamedMutator(input: Array[Byte], mutations: NonEmptyList[Mutation]) extends Mutator {
+class StreamedMutator(bytes: IO[Array[Byte]], mutations: NonEmptyList[IO[Mutation]]) extends Mutator[IO] {
 
-  override def mutatedBytes(): Array[Byte] = input
+  override def mutatedBytes(): IO[Array[Byte]] = bytes
 
-  override def next(input: Array[Byte]): Mutator =
+  // todo: extract "endless" list
+  override def next(input: Array[Byte]): Mutator[IO] =
     new StreamedMutator(
-      mutations.head(input),
+      mutations.head.map(m => m(input)),
       mutations.tail match {
         case Nil =>
           NonEmptyList.one(mutations.head)
@@ -26,6 +28,6 @@ class StreamedMutator(input: Array[Byte], mutations: NonEmptyList[Mutation]) ext
 
 object StreamedMutator {
 
-  def seedRandom(): StreamedMutator =
-    new StreamedMutator(randomBytes(new Array[Byte](1)), NonEmptyList.one(randomBytes))
+  def seed(seed: IO[Array[Byte]]): StreamedMutator =
+    new StreamedMutator(seed, NonEmptyList.one(randomBytes))
 }

@@ -8,21 +8,23 @@ import scalafuzz._
 
 import scala.util.{Failure, Success, Try}
 
-trait Loop[F[_], G[_]] {
+trait Loop[F[_]] {
   def run(options: FuzzerOptions,
           target: Target,
-          mutatorGen: Mutator,
-          reportAnalyzer: TargetRunReportAnalyzer[G]): F[FuzzerReport]
+          mutatorGen: Mutator[F],
+          reportAnalyzer: TargetRunReportAnalyzer[F]): F[FuzzerReport]
 }
 
-class IOLoop[G[_]] extends Loop[IO, G] {
+class IOLoop extends Loop[IO] {
 
   private def flattenInvocations(raw: ThreadSafeMap[DataDir, ThreadSafeQueue[InvocationId]]): Seq[InvocationId] =
     raw.values.flatMap(_.toArray.map(_.asInstanceOf[InvocationId])).toSeq
 
-  private def runOne(target: Target, input: Array[Byte]): TargetRunReport = {
+  private def runOne(target: Target, input: Array[Byte]): IO[TargetRunReport] = IO {
     Invoker.reset()
-    Try { target(input) } match {
+    Try {
+      target(input)
+    } match {
       case Failure(e) =>
         TargetRunReport(input, TargetExceptionThrown(e), flattenInvocations(Invoker.invocations()))
       case Success(_) =>
@@ -30,7 +32,7 @@ class IOLoop[G[_]] extends Loop[IO, G] {
     }
   }
 
-/*
+  /*
 todo:
 In a endless loop:
 - check if corpus should be reloaded (new inputs were added);
@@ -43,16 +45,20 @@ After each target run check if new coverage achieved (new features discovered, e
 
   override def run(options: FuzzerOptions,
                    target: Target,
-                   mutatorGen: Mutator,
-                   reportAnalyzer: TargetRunReportAnalyzer[G]): IO[FuzzerReport] =
-    IO(runOne(target, mutatorGen.mutatedBytes())).flatMap { report: TargetRunReport =>
-      reportAnalyzer.process(report)
-      report.exitStatus match {
+                   mutatorGen: Mutator[IO],
+                   reportAnalyzer: TargetRunReportAnalyzer[IO]): IO[FuzzerReport] = {
+    def innerLoop(currentRunCount: Int, mutatorGen: Mutator[IO]): IO[FuzzerReport] = for {
+      bytes <- mutatorGen.mutatedBytes()
+      targetRunReport <- runOne(target, bytes)
+      _ <- reportAnalyzer.process(targetRunReport)
+      report <- targetRunReport.exitStatus match {
         case TargetExceptionThrown(e) if options.exitOnFirstFailure =>
-          IO.pure(FuzzerReport(RunStats(1), Seq(ExceptionFailure(report.input, e))))
+          IO.pure(FuzzerReport(RunStats(currentRunCount), Seq(ExceptionFailure(targetRunReport.input, e))))
         case _ =>
-          run(options, target, mutatorGen.next(report.input), reportAnalyzer)
+          innerLoop(currentRunCount + 1, mutatorGen.next(targetRunReport.input))
       }
-    }
-}
+    } yield report
+    innerLoop(1, mutatorGen)
+  }
 
+}

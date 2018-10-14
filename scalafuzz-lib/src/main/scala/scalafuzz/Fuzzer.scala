@@ -1,15 +1,16 @@
 package scalafuzz
 
-import cats.effect.IO
-import scalafuzz.internals.{IOLoop, Runner, SyncTargetRunReportAnalyzer}
+import scalafuzz.internals.mutations.Mutations
+import scalafuzz.internals.{IOLoop, IOTargetRunReportAnalyzer, Runner, StreamedMutator}
 
 object Fuzzer {
   type Target = Array[Byte] => Unit
 
   def run(options: FuzzerOptions, target: Target): FuzzerReport = {
-    new Runner(new IOLoop[IO],
+    new Runner(new IOLoop(),
+      StreamedMutator.seed(Mutations.makeRandomBytes(10)),
       Log.io,
-      new SyncTargetRunReportAnalyzer[IO]()).program(options, target).unsafeRunSync()
+      new IOTargetRunReportAnalyzer()).program(options, target).unsafeRunSync()
   }
 
 }

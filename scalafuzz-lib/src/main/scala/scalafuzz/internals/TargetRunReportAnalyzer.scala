@@ -1,15 +1,15 @@
 package scalafuzz.internals
 
-import cats.effect.Effect
+import cats.effect.IO
 
 trait TargetRunReportAnalyzer[F[_]] {
   def process(report: TargetRunReport): F[Unit]
 }
 
-class SyncTargetRunReportAnalyzer[F[_]](implicit E: Effect[F]) extends TargetRunReportAnalyzer[F] {
+class IOTargetRunReportAnalyzer extends TargetRunReportAnalyzer[IO] {
 
-  override def process(report: TargetRunReport): F[Unit] = {
+  override def process(report: TargetRunReport): IO[Unit] = {
     // todo create and use CorpusRepository to save input for "interesting" cases
-    E.pure(())
+    IO.pure(())
   }
 }
