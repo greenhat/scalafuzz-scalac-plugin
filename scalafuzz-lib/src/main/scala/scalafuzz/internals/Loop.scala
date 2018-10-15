@@ -32,17 +32,6 @@ class IOLoop extends Loop[IO] {
     }
   }
 
-  /*
-todo:
-In a endless loop:
-- check if corpus should be reloaded (new inputs were added);
-- choose random input from the corpus or generate random bytes if empty;
-- run deterministic mutations (see afl);
-- run fixed number of stacked deterministic and random mutations (see afl and libfuzzer);
-
-After each target run check if new coverage achieved (new features discovered, e.g. new invocations collected) then add the input to the corpus.
- */
-
   override def run(options: FuzzerOptions,
                    target: Target,
                    mutatorGen: Mutator[IO],

@@ -3,6 +3,7 @@ package scalafuzz.internals
 import cats.effect.IO
 
 trait TargetRunReportAnalyzer[F[_]] {
+  // todo: After each target run check if new coverage achieved (new features discovered, e.g. new invocations collected) then add the input to the corpus.
   def process(report: TargetRunReport): F[Unit]
 }
 

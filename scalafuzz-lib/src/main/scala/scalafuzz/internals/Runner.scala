@@ -11,7 +11,6 @@ import scalafuzz.internals.Corpus.CorpusItem
 
 private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
                                              corpus: Corpus[F],
-                                             mutator: Mutator[F],
                                              log: Log[F],
                                              reportAnalyzer: TargetRunReportAnalyzer[F])
                                             (implicit F: Sync[F], generator: Generator[F]) {
@@ -27,7 +26,7 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
   private def loop(corpusInputs: NonEmptyList[F[CorpusItem]],
                    options: FuzzerOptions,
                    target: Target): F[Seq[FuzzerReport]] = for {
-    report <- loop.run(options, target, StreamedMutator.seeded(corpusInputs.head, generator), reportAnalyzer)
+    report <- loop.run(options, target, StreamedMutator.seeded(corpusInputs.head), reportAnalyzer)
     reports <-
       if (report.failures.nonEmpty && options.exitOnFirstFailure)
         F.delay(Seq())

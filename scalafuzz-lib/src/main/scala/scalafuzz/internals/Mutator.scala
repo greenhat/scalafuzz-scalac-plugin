@@ -27,11 +27,12 @@ class StreamedMutator[F[_]](bytes: F[Array[Byte]], mutations: NonEmptyList[Mutat
 }
 
 object StreamedMutator {
+  /* todo:
+  - run deterministic mutations (see afl);
+  - run fixed number of stacked deterministic and random mutations (see afl and libfuzzer);
+  */
 
-  def io(seed: Array[Byte])(implicit generator: Generator[IO]): StreamedMutator[IO] =
-    new StreamedMutator(IO.pure(seed), NonEmptyList.one(RandomBytesMutation.io))
-
-  def seeded[F[_]](seed: F[Array[Byte]], generator: Generator[F]): StreamedMutator[F] =
-    new StreamedMutator[F](seed, NonEmptyList.one(new RandomBytesMutation(generator)))
+  def seeded[F[_]](seed: F[Array[Byte]])(implicit generator: Generator[F]): StreamedMutator[F] =
+    new StreamedMutator[F](seed, NonEmptyList.one(RandomBytesMutation()))
 
 }

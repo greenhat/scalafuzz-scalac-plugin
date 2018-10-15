@@ -1,6 +1,5 @@
 package scalafuzz.internals.mutations
 
-import cats.effect.IO
 import scalafuzz.internals.Generator
 
 object Mutations {
@@ -15,7 +14,7 @@ class RandomBytesMutation[F[_]](generator: Generator[F]) extends Mutation[F] {
 }
 
 object RandomBytesMutation {
-  def io(implicit generator: Generator[IO]): RandomBytesMutation[IO] = new RandomBytesMutation(generator)
+  def apply[F[_]]()(implicit generator: Generator[F]): RandomBytesMutation[F] = new RandomBytesMutation(generator)
 }
 
 

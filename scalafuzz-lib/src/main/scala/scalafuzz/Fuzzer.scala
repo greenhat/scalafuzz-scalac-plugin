@@ -10,7 +10,6 @@ object Fuzzer {
   def run(options: FuzzerOptions, target: Target): Seq[FuzzerReport] = {
     new Runner(new IOLoop(),
       new IOCorpus(),
-      StreamedMutator.io(Array.emptyByteArray),
       Log.io,
       new IOTargetRunReportAnalyzer()).program(options, target).unsafeRunSync()
   }
