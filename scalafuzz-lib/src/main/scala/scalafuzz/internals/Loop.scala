@@ -43,8 +43,12 @@ class IOLoop extends Loop[IO] {
       report <- targetRunReport.exitStatus match {
         case TargetExceptionThrown(e) if options.exitOnFirstFailure =>
           IO.pure(FuzzerReport(RunStats(currentRunCount), Seq(ExceptionFailure(targetRunReport.input, e))))
-        case _ =>
-          innerLoop(currentRunCount + 1, mutatorGen.next(targetRunReport.input))
+        case _ => mutatorGen.next(targetRunReport.input) match {
+          case Some(mutator) =>
+            innerLoop(currentRunCount + 1, mutator)
+          case None =>
+            IO.pure(FuzzerReport(RunStats(currentRunCount), Seq()))
+        }
       }
     } yield report
     innerLoop(1, mutatorGen)

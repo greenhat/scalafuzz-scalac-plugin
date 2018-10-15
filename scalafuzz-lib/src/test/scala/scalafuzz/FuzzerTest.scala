@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 class FuzzerTest extends FunSuite
   with Matchers {
 
-  test("receiver throws on the second run") {
+  test("receiver throws on the predetermined run") {
     val options = FuzzerOptions(
       TimedDuration(3.hours),
       exitOnFirstFailure = true)
@@ -40,4 +40,6 @@ class FuzzerTest extends FunSuite
     reports.flatMap(_.failures).length shouldBe 1
     reports.map(_.stats.runCount).sum shouldBe 1
   }
+
+  // todo test that inputs are unique
 }
