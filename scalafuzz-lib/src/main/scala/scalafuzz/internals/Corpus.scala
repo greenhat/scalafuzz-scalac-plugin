@@ -17,12 +17,15 @@ object Corpus {
 
 class IOCorpus extends Corpus[IO] {
 
+  // todo implement
   override def load: Seq[IO[Array[Byte]]] = {
     Seq()
   }
 
+  // todo implement
   override def add(input: Array[Byte]): IO[Unit] = ???
 
-  override def added: Seq[IO[CorpusItem]] = ???
+  // todo implement
+  override def added: Seq[IO[CorpusItem]] = Seq()
 }
 

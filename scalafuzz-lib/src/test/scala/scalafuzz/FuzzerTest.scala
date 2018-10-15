@@ -24,33 +24,20 @@ class FuzzerTest extends FunSuite
       }
     }
 
-    val report = Fuzzer.run(options, TargetObj.target)
-    report.failures.length shouldBe 1
-    report.stats.runCount shouldBe expectedRunCountFail
+    val reports = Fuzzer.run(options, TargetObj.target)
+    reports.flatMap(_.failures).length shouldBe 1
+    reports.map(_.stats.runCount).sum shouldBe expectedRunCountFail
   }
 
   test("empty input on the first run") {
     val options = FuzzerOptions(
       TimedDuration(3.hours),
       exitOnFirstFailure = true)
-    val report = Fuzzer.run(options, { bytes =>
-      bytes.isEmpty shouldBe true
-      throw new RuntimeException("catch me")
-    })
-    report.failures.length shouldBe 1
-    report.stats.runCount shouldBe 1
-  }
-
-  test("new runner") {
-    val options = FuzzerOptions(
-      TimedDuration(3.hours),
-      exitOnFirstFailure = true)
-    val reports = Fuzzer.run2(options, { bytes =>
+    val reports = Fuzzer.run(options, { bytes =>
       bytes.isEmpty shouldBe true
       throw new RuntimeException("catch me")
     })
     reports.flatMap(_.failures).length shouldBe 1
+    reports.map(_.stats.runCount).sum shouldBe 1
   }
-
-
 }

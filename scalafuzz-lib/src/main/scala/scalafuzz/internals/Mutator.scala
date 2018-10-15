@@ -1,24 +1,22 @@
 package scalafuzz.internals
 
-import cats.Functor
 import cats.data.NonEmptyList
 import cats.effect.IO
-import cats.syntax.functor._
-import scalafuzz.internals.mutations.Mutations.{Mutation, randomBytes}
+import scalafuzz.internals.mutations.{Mutation, RandomBytesMutation}
 
 trait Mutator[F[_]]{
   def mutatedBytes(): F[Array[Byte]]
   def next(input: Array[Byte]): Mutator[F]
 }
 
-class StreamedMutator[F[_] : Functor](bytes: F[Array[Byte]], mutations: NonEmptyList[F[Mutation]]) extends Mutator[F] {
+class StreamedMutator[F[_]](bytes: F[Array[Byte]], mutations: NonEmptyList[Mutation[F]]) extends Mutator[F] {
 
   override def mutatedBytes(): F[Array[Byte]] = bytes
 
-  // todo: extract "endless" list
+  // todo: it's not an endless list anymore (corpus inputs are "endless")
   override def next(input: Array[Byte]): Mutator[F] =
     new StreamedMutator(
-      mutations.head.map(m => m(input)),
+      mutations.head.mutate(input),
       mutations.tail match {
         case Nil =>
           NonEmptyList.one(mutations.head)
@@ -30,10 +28,10 @@ class StreamedMutator[F[_] : Functor](bytes: F[Array[Byte]], mutations: NonEmpty
 
 object StreamedMutator {
 
-  def ioSeeded(seed: Array[Byte]): StreamedMutator[IO] =
-    new StreamedMutator(IO.pure(seed), NonEmptyList.one(randomBytes))
+  def io(seed: Array[Byte])(implicit generator: Generator[IO]): StreamedMutator[IO] =
+    new StreamedMutator(IO.pure(seed), NonEmptyList.one(RandomBytesMutation.io))
 
-  // todo parametrize randomBytes with effect (F)?
-  def seeded[F[_]](seed: F[Array[Byte]]): StreamedMutator[F] = ???
+  def seeded[F[_]](seed: F[Array[Byte]], generator: Generator[F]): StreamedMutator[F] =
+    new StreamedMutator[F](seed, NonEmptyList.one(new RandomBytesMutation(generator)))
 
 }
