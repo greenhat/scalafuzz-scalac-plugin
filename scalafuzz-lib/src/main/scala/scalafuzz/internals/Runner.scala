@@ -14,7 +14,6 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
                                              log: Log[F],
                                              reportAnalyzer: TargetRunReportAnalyzer[F])
                                             (implicit F: Sync[F], generator: Generator[F]) {
-  // todo test
   def program(options: FuzzerOptions, target: Target): F[Seq[FuzzerReport]] = for {
     _ <- log.info(s"starting a run with options: $options")
     reports <-

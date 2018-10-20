@@ -13,6 +13,7 @@ trait Corpus[F[_]] {
 
 object Corpus {
   type CorpusItem = Array[Byte]
+  type AddCorpusItem[F[_]] = CorpusItem => F[Unit]
 }
 
 class IOCorpus extends Corpus[IO] {
