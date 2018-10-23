@@ -20,7 +20,7 @@ class IOLoop extends Loop[IO] {
   private def flattenInvocations(raw: ThreadSafeMap[DataDir, ThreadSafeQueue[InvocationId]]): Seq[InvocationId] =
     raw.values.flatMap(_.toArray.map(_.asInstanceOf[InvocationId])).toSeq
 
-  private def runOne(target: Target, input: Array[Byte]): IO[TargetRunReport] = IO {
+  private def runOne(target: Target, input: Array[Byte]): TargetRunReport = {
     Invoker.reset()
     Try {
       target(input)
@@ -38,8 +38,7 @@ class IOLoop extends Loop[IO] {
                    reportAnalyzer: TargetRunReportAnalyzer[IO]): IO[FuzzerReport] = {
     def innerLoop(currentRunCount: Int, mutatorGen: Mutator[IO]): IO[FuzzerReport] = for {
       bytes <- mutatorGen.mutatedBytes()
-      targetRunReport <- runOne(target, bytes)
-      _ <- reportAnalyzer.process(targetRunReport)
+      targetRunReport <- IO { reportAnalyzer.process(runOne(target, bytes)) }
       report <- targetRunReport.exitStatus match {
         case TargetExceptionThrown(e) if options.exitOnFirstFailure =>
           IO.pure(FuzzerReport(RunStats(currentRunCount), Seq(ExceptionFailure(targetRunReport.input, e))))
