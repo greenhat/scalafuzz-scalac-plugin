@@ -5,6 +5,8 @@ import scalafuzz.Fuzzer.Target
 import scalafuzz.Invoker.{DataDir, InvocationId, ThreadSafeQueue}
 import scalafuzz.Platform.ThreadSafeMap
 import scalafuzz._
+import scalafuzz.internals.Corpus.CorpusItem
+import scalafuzz.internals.TargetRunReportAnalyzer.{NewCoverage, NoNewCoverage}
 
 import scala.util.{Failure, Success, Try}
 
@@ -38,15 +40,28 @@ class IOLoop extends Loop[IO] {
                    reportAnalyzer: TargetRunReportAnalyzer[IO]): IO[FuzzerReport] = {
     def innerLoop(currentRunCount: Int, mutatorGen: Mutator[IO]): IO[FuzzerReport] = for {
       bytes <- mutatorGen.mutatedBytes()
-      targetRunReport <- IO { reportAnalyzer.process(runOne(target, bytes)) }
+      // workaround scalac bug with tuple decomposition
+      tuple <- IO[(TargetRunReport, Seq[CorpusItem])] {
+        val report = runOne(target, bytes)
+        reportAnalyzer.process(report) match {
+          case NoNewCoverage => (report, Seq.empty)
+          case NewCoverage(input) => (report, Seq(input))
+        }
+      }
+      targetRunReport = tuple._1
+      newCorpusItems = tuple._2
       report <- targetRunReport.exitStatus match {
         case TargetExceptionThrown(e) if options.exitOnFirstFailure =>
-          IO.pure(FuzzerReport(RunStats(currentRunCount), Seq(ExceptionFailure(targetRunReport.input, e))))
+          IO.pure(
+            FuzzerReport(RunStats(currentRunCount),
+              Seq(ExceptionFailure(targetRunReport.input, e)),
+              newCorpusItems))
         case _ => mutatorGen.next(targetRunReport.input) match {
           case Some(mutator) =>
             innerLoop(currentRunCount + 1, mutator)
           case None =>
-            IO.pure(FuzzerReport(RunStats(currentRunCount), Seq()))
+            IO.pure(FuzzerReport(
+              RunStats(currentRunCount), Seq(), newCorpusItems))
         }
       }
     } yield report

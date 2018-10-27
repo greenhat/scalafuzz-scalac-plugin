@@ -1,10 +1,11 @@
 package scalafuzz
 
 import scalafuzz.Platform.File
+import scalafuzz.internals.Corpus.CorpusItem
 
 import scala.concurrent.duration.Duration
 
-case class FuzzerReport(stats: RunStats, failures: Seq[Failure])
+case class FuzzerReport(stats: RunStats, failures: Seq[Failure], newCorpusItems: Seq[CorpusItem])
 
 case class RunStats(runCount: Long)
 

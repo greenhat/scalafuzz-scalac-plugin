@@ -26,6 +26,7 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
                    options: FuzzerOptions,
                    target: Target): F[Seq[FuzzerReport]] = for {
     report <- loop.run(options, target, StreamedMutator.seeded(corpusInputs.head), reportAnalyzer)
+    _ <- corpus.add(report.newCorpusItems)
     reports <-
       if (report.failures.nonEmpty && options.exitOnFirstFailure)
         F.delay(Seq())
