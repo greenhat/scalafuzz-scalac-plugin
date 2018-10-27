@@ -2,12 +2,12 @@ package scalafuzz.internals
 
 import org.scalatest.{FunSuite, Matchers}
 import scalafuzz.Invoker.InvocationId
-import scalafuzz.internals.TargetRunReportAnalyzer.NoNewCoverage
+import scalafuzz.internals.CoverageAnalyzer.NoNewCoverage
 
-class TargetRunReportAnalyzerTest extends FunSuite with Matchers {
+class CoverageAnalyzerTest extends FunSuite with Matchers {
 
   test("testProcess") {
-    val a = new IOTargetRunReportAnalyzer
+    val a = new CoverageAnalyzer
     a.process(
       TargetRunReport(Array[Byte](), TargetNormalExit, Seq[InvocationId]())
     ) shouldBe NoNewCoverage

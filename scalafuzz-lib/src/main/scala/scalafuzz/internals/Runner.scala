@@ -12,7 +12,7 @@ import scalafuzz.internals.Corpus.CorpusItem
 private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
                                              corpus: Corpus[F],
                                              log: Log[F],
-                                             reportAnalyzer: TargetRunReportAnalyzer[F])
+                                             reportAnalyzer: CoverageAnalyzer)
                                             (implicit F: Sync[F], generator: Generator[F]) {
   def program(options: FuzzerOptions, target: Target): F[Seq[FuzzerReport]] = for {
     _ <- log.info(s"starting a run with options: $options")

@@ -12,7 +12,7 @@ object Fuzzer {
     new Runner(new IOLoop(),
       corpus,
       Log.io,
-      new IOTargetRunReportAnalyzer).program(options, target).unsafeRunSync()
+      new CoverageAnalyzer).program(options, target).unsafeRunSync()
   }
 
 }

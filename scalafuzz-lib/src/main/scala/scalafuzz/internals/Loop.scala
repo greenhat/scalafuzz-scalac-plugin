@@ -6,7 +6,7 @@ import scalafuzz.Invoker.{DataDir, InvocationId, ThreadSafeQueue}
 import scalafuzz.Platform.ThreadSafeMap
 import scalafuzz._
 import scalafuzz.internals.Corpus.CorpusItem
-import scalafuzz.internals.TargetRunReportAnalyzer.{NewCoverage, NoNewCoverage}
+import scalafuzz.internals.CoverageAnalyzer.{NewCoverage, NoNewCoverage}
 
 import scala.util.{Failure, Success, Try}
 
@@ -14,7 +14,7 @@ trait Loop[F[_]] {
   def run(options: FuzzerOptions,
           target: Target,
           mutatorGen: Mutator[F],
-          reportAnalyzer: TargetRunReportAnalyzer[F]): F[FuzzerReport]
+          reportAnalyzer: CoverageAnalyzer): F[FuzzerReport]
 }
 
 class IOLoop extends Loop[IO] {
@@ -37,7 +37,7 @@ class IOLoop extends Loop[IO] {
   override def run(options: FuzzerOptions,
                    target: Target,
                    mutatorGen: Mutator[IO],
-                   reportAnalyzer: TargetRunReportAnalyzer[IO]): IO[FuzzerReport] = {
+                   reportAnalyzer: CoverageAnalyzer): IO[FuzzerReport] = {
     def innerLoop(currentRunCount: Int, mutatorGen: Mutator[IO]): IO[FuzzerReport] = for {
       bytes <- mutatorGen.mutatedBytes()
       // workaround scalac bug with tuple decomposition

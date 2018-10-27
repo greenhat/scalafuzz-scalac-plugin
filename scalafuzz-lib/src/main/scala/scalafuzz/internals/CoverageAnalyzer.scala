@@ -3,10 +3,9 @@ package scalafuzz.internals
 import java.util
 
 import cats.data.State
-import cats.effect.IO
-import scalafuzz.internals.TargetRunReportAnalyzer.{CoverageReport, NoNewCoverage}
+import scalafuzz.internals.CoverageAnalyzer.{CoverageReport, NoNewCoverage}
 
-trait TargetRunReportAnalyzer[F[_]] {
+class CoverageAnalyzer {
 
   private def update[S](f: S => S): State[S, Unit] = for {
     v <- State.get[S]
@@ -35,10 +34,8 @@ trait TargetRunReportAnalyzer[F[_]] {
   }
 }
 
-object TargetRunReportAnalyzer {
+object CoverageAnalyzer {
   sealed trait CoverageReport
   case object NoNewCoverage extends CoverageReport
   case class NewCoverage(input: Array[Byte]) extends CoverageReport
 }
-
-class IOTargetRunReportAnalyzer extends TargetRunReportAnalyzer[IO]
