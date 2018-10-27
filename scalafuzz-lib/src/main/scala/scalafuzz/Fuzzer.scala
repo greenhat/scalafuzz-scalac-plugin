@@ -8,7 +8,7 @@ object Fuzzer {
   implicit val ioGenerator: IOGenerator = new IOGenerator()
 
   def run(options: FuzzerOptions, target: Target): Seq[FuzzerReport] = {
-    val corpus = new IOCorpus()
+    val corpus = new IOInMemoryCorpus()
     new Runner(new IOLoop(),
       corpus,
       Log.io,

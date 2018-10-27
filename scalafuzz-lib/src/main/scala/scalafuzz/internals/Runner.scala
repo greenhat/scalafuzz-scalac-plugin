@@ -33,7 +33,7 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
       else
         corpusInputs.tail match {
           case Nil =>
-            corpus.added match {
+            corpus.addedAfterLastCall match {
               case Nil =>
                 loop(NonEmptyList.one(generator.randomBytesCorpusItem), options, target)
               case addedItems =>

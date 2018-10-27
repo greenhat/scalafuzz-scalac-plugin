@@ -3,31 +3,40 @@ package scalafuzz.internals
 import cats.effect.IO
 import scalafuzz.internals.Corpus.CorpusItem
 
+import scala.collection.mutable
+
 
 trait Corpus[F[_]] {
 
   def load: Seq[F[CorpusItem]]
   def add(inputs: Seq[CorpusItem]): F[Unit]
-  def added: Seq[F[CorpusItem]]
+  def addedAfterLastCall: Seq[F[CorpusItem]]
 }
 
 object Corpus {
   type CorpusItem = Array[Byte]
 }
 
-class IOCorpus extends Corpus[IO] {
+class IOInMemoryCorpus extends Corpus[IO] {
 
-  // todo implement
-  override def load: Seq[IO[Array[Byte]]] = {
-    Seq()
+  private val store = mutable.Set[CorpusItem]()
+  private val storeForAddedAfterLastCall = mutable.Set[CorpusItem]()
+
+  override def load: Seq[IO[Array[Byte]]] =
+    store.toSeq.map(i => IO.pure(i))
+
+  override def add(inputs: Seq[CorpusItem]): IO[Unit] = IO {
+    inputs match {
+      case Nil => ()
+      case v =>
+        v.foreach{i => store.add(i); storeForAddedAfterLastCall.add(i)}
+    }
   }
 
-  // todo implement
-  override def add(inputs: Seq[CorpusItem]): IO[Unit] = inputs match {
-    case _ => IO.unit
+  override def addedAfterLastCall: Seq[IO[CorpusItem]] = {
+    val res = storeForAddedAfterLastCall.toSeq.map(i => IO.pure(i))
+    storeForAddedAfterLastCall.clear()
+    res
   }
-
-  // todo implement
-  override def added: Seq[IO[CorpusItem]] = Seq()
 }
 
