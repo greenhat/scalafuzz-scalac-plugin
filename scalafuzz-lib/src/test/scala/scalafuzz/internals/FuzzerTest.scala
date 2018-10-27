@@ -1,6 +1,7 @@
-package scalafuzz
+package scalafuzz.internals
 
 import org.scalatest.{FunSuite, Matchers}
+import scalafuzz.{Fuzzer, FuzzerOptions, TimedDuration}
 
 import scala.concurrent.duration._
 
