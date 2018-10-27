@@ -17,7 +17,7 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
   def program(options: FuzzerOptions, target: Target): F[Seq[FuzzerReport]] = for {
     _ <- log.info(s"starting a run with options: $options")
     reports <-
-      loop(NonEmptyList.fromListUnsafe(generator.emptyBytesCorpusItem +: corpus.load.toList),
+      loop(NonEmptyList.fromListUnsafe(generator.emptyBytesCorpusItem +: corpus.items().toList),
         options, target)
     _ <- log.info(s"finished with results: $reports")
   } yield reports

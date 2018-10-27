@@ -8,7 +8,7 @@ import scala.collection.mutable
 
 trait Corpus[F[_]] {
 
-  def load: Seq[F[CorpusItem]]
+  def items(): Seq[F[CorpusItem]]
   def add(inputs: Seq[CorpusItem]): F[Unit]
   def addedAfterLastCall: Seq[F[CorpusItem]]
 }
@@ -22,7 +22,7 @@ class IOInMemoryCorpus extends Corpus[IO] {
   private val store = mutable.Set[CorpusItem]()
   private val storeForAddedAfterLastCall = mutable.Set[CorpusItem]()
 
-  override def load: Seq[IO[Array[Byte]]] =
+  override def items(): Seq[IO[Array[Byte]]] =
     store.toSeq.map(i => IO.pure(i))
 
   override def add(inputs: Seq[CorpusItem]): IO[Unit] = IO {
