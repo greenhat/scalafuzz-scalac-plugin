@@ -18,29 +18,35 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
     _ <- log.info(s"starting a run with options: $options")
     reports <-
       loop(NonEmptyList.fromListUnsafe(generator.emptyBytesCorpusItem +: corpus.items().toList),
-        options, target)
+        options, target, totalDurationNano = 0L)
     _ <- log.info(s"finished with results: $reports")
   } yield reports
 
   private def loop(corpusInputs: NonEmptyList[F[CorpusItem]],
                    options: FuzzerOptions,
-                   target: Target): F[Seq[FuzzerReport]] = for {
-    report <- loop.run(options, target, StreamedMutator.seeded(corpusInputs.head), reportAnalyzer)
+                   target: Target,
+                   totalDurationNano: Long): F[Seq[FuzzerReport]] = for {
+    report <- loop.run(options, target, StreamedMutator.seeded(corpusInputs.head), reportAnalyzer,
+      totalDurationOnStartNano = totalDurationNano)
     _ <- corpus.add(report.newCorpusItems)
     reports <-
-      if (report.failures.nonEmpty && options.exitOnFirstFailure)
+      if ((report.failures.nonEmpty && options.exitOnFirstFailure)
+        || (options.maxDuration.isFinite && options.maxDuration.toNanos < totalDurationNano + report.elapsedTimeNano))
         F.delay(Seq())
       else
         corpusInputs.tail match {
           case Nil =>
             corpus.addedAfterLastCall match {
               case Nil =>
-                loop(NonEmptyList.one(generator.randomBytesCorpusItem), options, target)
+                loop(NonEmptyList.one(generator.randomBytesCorpusItem), options, target,
+                  totalDurationNano + report.elapsedTimeNano)
               case addedItems =>
-                loop(NonEmptyList.fromListUnsafe(addedItems.toList), options, target)
+                loop(NonEmptyList.fromListUnsafe(addedItems.toList), options, target,
+                  totalDurationNano + report.elapsedTimeNano)
             }
           case tail =>
-            loop(NonEmptyList.fromListUnsafe(tail), options, target)
+            loop(NonEmptyList.fromListUnsafe(tail), options, target,
+              totalDurationNano + report.elapsedTimeNano)
         }
   } yield report +: reports
 
