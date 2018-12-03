@@ -11,7 +11,7 @@ class CoverageAnalyzerTest extends FunSuite with Matchers {
     val input1 = Array.fill[Byte](32)(1)
     val coverage1 = Seq[InvocationId](1,2,3)
     a.process(
-      TargetRunReport(input1, TargetNormalExit, coverage1)
+      TargetRunReport(input1, TargetNormalExit, coverage1, 1)
     ) shouldBe NewCoverage(input1)
   }
 
@@ -20,12 +20,12 @@ class CoverageAnalyzerTest extends FunSuite with Matchers {
     val input1 = Array.fill[Byte](32)(1)
     val coverage1 = Seq[InvocationId](1,2,3)
     a.process(
-      TargetRunReport(input1, TargetNormalExit, coverage1)
+      TargetRunReport(input1, TargetNormalExit, coverage1, 1)
     ) shouldBe NewCoverage(input1)
 
     val input2 = Array.fill[Byte](32)(2)
     a.process(
-      TargetRunReport(input2, TargetNormalExit, coverage1)
+      TargetRunReport(input2, TargetNormalExit, coverage1, 1)
     ) shouldBe NoNewCoverage
   }
 
@@ -34,13 +34,13 @@ class CoverageAnalyzerTest extends FunSuite with Matchers {
     val input1 = Array.fill[Byte](32)(1)
     val coverage1 = Seq[InvocationId](1,2,3)
     a.process(
-      TargetRunReport(input1, TargetNormalExit, coverage1)
+      TargetRunReport(input1, TargetNormalExit, coverage1, 1)
     ) shouldBe NewCoverage(input1)
 
     val input2 = Array.fill[Byte](32)(2)
     val coverage2 = Seq[InvocationId](1,2,3,4)
     a.process(
-      TargetRunReport(input2, TargetNormalExit, coverage2)
+      TargetRunReport(input2, TargetNormalExit, coverage2, 1)
     ) shouldBe NewCoverage(input2)
   }
 }
