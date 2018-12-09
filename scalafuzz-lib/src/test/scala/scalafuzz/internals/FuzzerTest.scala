@@ -45,7 +45,7 @@ class FuzzerTest extends FunSuite
     reports.map(_.stats.runCount).sum shouldBe 1
   }
 
-  test("tests that inputs are unique") {
+  test("tests that most inputs are unique") {
     val options = FuzzerOptions(
       1.second,
       exitOnFirstFailure = true)
@@ -55,6 +55,7 @@ class FuzzerTest extends FunSuite
       inputHashes += util.Arrays.hashCode(bytes)
     })
 
-    inputHashes.toSet.size shouldBe inputHashes.size
+    val nonUniqueInputsNum = inputHashes.size - inputHashes.toSet.size
+    (nonUniqueInputsNum.toDouble / inputHashes.size.toDouble) should be < 0.01
   }
 }
