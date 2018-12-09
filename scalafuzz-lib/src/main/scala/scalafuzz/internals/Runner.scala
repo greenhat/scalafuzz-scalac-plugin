@@ -19,7 +19,7 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
     reports <-
       loop(NonEmptyList.fromListUnsafe(generator.emptyBytesCorpusItem +: corpus.items().toList),
         options, target, totalDurationNano = 0L)
-    _ <- log.info(s"finished with results: $reports")
+    _ <- log.info(s"finished with total runs: ${reports.length}")
   } yield reports
 
   private def loop(corpusInputs: NonEmptyList[F[CorpusItem]],
@@ -49,5 +49,4 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
               totalDurationNano + report.elapsedTimeNano)
         }
   } yield report +: reports
-
 }
