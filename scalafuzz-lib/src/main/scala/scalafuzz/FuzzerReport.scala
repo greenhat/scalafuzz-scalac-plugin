@@ -10,7 +10,7 @@ case class FuzzerReport(stats: RunStats,
                         newCorpusItems: Seq[CorpusItem],
                         elapsedTimeNano: Long)
 
-case class RunStats(runCount: Long)
+case class RunStats(runCount: Int)
 
 sealed trait Failure
 case class ExceptionFailure(input: Array[Byte],

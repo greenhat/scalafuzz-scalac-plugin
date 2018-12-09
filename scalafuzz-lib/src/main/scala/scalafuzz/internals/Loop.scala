@@ -34,7 +34,8 @@ class IOLoop extends Loop[IO] {
       case Failure(e) =>
         TargetRunReport(input, TargetExceptionThrown(e), flattenInvocations(Invoker.invocations()), 0L)
       case Success(elapsedTimeNano) =>
-        TargetRunReport(input, TargetNormalExit, flattenInvocations(Invoker.invocations()), elapsedTimeNano)
+        TargetRunReport(input, TargetNormalExit, flattenInvocations(Invoker.invocations()),
+          math.max(elapsedTimeNano, 100L))
     }
   }
 
