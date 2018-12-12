@@ -56,25 +56,27 @@ class IOLoop extends Loop[IO] {
       }
       targetRunReport = tuple._1
       newCorpusItems = tuple._2
+      newCurrentTotalDuration = currentTotalDuration + targetRunReport.elapsedTimeNano
       report <- (targetRunReport.exitStatus, options.maxDuration) match {
         case (TargetExceptionThrown(e), _) if options.exitOnFirstFailure =>
           IO.pure(
             FuzzerReport(RunStats(currentRunCount),
               Seq(ExceptionFailure(targetRunReport.input, e)),
-              newCorpusItems, elapsedTimeNano = currentTotalDuration - totalDurationOnStartNano))
+              newCorpusItems, elapsedTimeNano = newCurrentTotalDuration - totalDurationOnStartNano))
         case (_, maxDuration: FiniteDuration)
-          if (currentTotalDuration + targetRunReport.elapsedTimeNano) > maxDuration.toNanos =>
+          if newCurrentTotalDuration > maxDuration.toNanos =>
           IO.pure(
             FuzzerReport(RunStats(currentRunCount),
               Seq(),
-              newCorpusItems, currentTotalDuration + targetRunReport.elapsedTimeNano - totalDurationOnStartNano))
+              newCorpusItems, newCurrentTotalDuration - totalDurationOnStartNano))
         case _ =>
           mutatorGen.next(targetRunReport.input) match {
             case Some(mutator) =>
-              innerLoop(currentRunCount + 1, mutator, currentTotalDuration + targetRunReport.elapsedTimeNano)
+              innerLoop(currentRunCount + 1, mutator, newCurrentTotalDuration)
             case None =>
               IO.pure(FuzzerReport(
-                RunStats(currentRunCount), Seq(), newCorpusItems, currentTotalDuration - totalDurationOnStartNano))
+                RunStats(currentRunCount), Seq(), newCorpusItems,
+                newCurrentTotalDuration - totalDurationOnStartNano))
           }
       }
     } yield report

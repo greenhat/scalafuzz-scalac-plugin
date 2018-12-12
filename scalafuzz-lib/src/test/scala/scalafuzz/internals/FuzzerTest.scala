@@ -1,5 +1,6 @@
 package scalafuzz.internals
 
+import java.security.MessageDigest
 import java.util
 
 import org.scalatest.{FunSuite, Matchers}
@@ -10,6 +11,17 @@ import scala.concurrent.duration._
 
 class FuzzerTest extends FunSuite
   with Matchers {
+
+  private def md5(b: Array[Byte]): Array[Byte] = {
+    MessageDigest.getInstance("MD5").digest(b)
+  }
+
+  private def time(block: => Any): Long = {
+    val t0 = System.nanoTime()
+    block
+    val t1 = System.nanoTime()
+    t1 - t0
+  }
 
   test("receiver throws on the predetermined run") {
     val options = FuzzerOptions(
@@ -46,14 +58,18 @@ class FuzzerTest extends FunSuite
   }
 
   test("tests that most inputs are unique") {
+    val timeToRun = 1.second
     val options = FuzzerOptions(
-      1.second,
+      timeToRun,
       exitOnFirstFailure = true)
     var inputHashes = new ArrayBuffer[Int]()
 
-    val _ = Fuzzer.run(options, { bytes =>
-      inputHashes += util.Arrays.hashCode(bytes)
-    })
+    time {
+      Fuzzer.run(options, { bytes =>
+        val processedBytes = (1 to 10000).foldLeft(bytes)((acc, _) => md5(acc))
+        inputHashes += util.Arrays.hashCode(processedBytes)
+      })
+    } should be <= (timeToRun.toNanos.toDouble * 1.3).toLong
 
     val nonUniqueInputsNum = inputHashes.size - inputHashes.toSet.size
     (nonUniqueInputsNum.toDouble / inputHashes.size.toDouble) should be < 0.01
