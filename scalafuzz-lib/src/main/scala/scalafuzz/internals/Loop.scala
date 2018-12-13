@@ -16,7 +16,7 @@ trait Loop[F[_]] {
           target: Target,
           mutatorGen: Mutator[F],
           coverageAnalyzer: CoverageAnalyzer,
-          totalDurationOnStartNano: Long): F[FuzzerReport]
+          totalDurationOnStartNano: Long): F[CorpusItemLoopReport]
 }
 
 class IOLoop extends Loop[IO] {
@@ -43,42 +43,49 @@ class IOLoop extends Loop[IO] {
                    target: Target,
                    mutatorGen: Mutator[IO],
                    coverageAnalyzer: CoverageAnalyzer,
-                   totalDurationOnStartNano: Long): IO[FuzzerReport] = {
-    def innerLoop(currentRunCount: Int, mutatorGen: Mutator[IO], currentTotalDuration: Long): IO[FuzzerReport] = for {
+                   totalDurationOnStartNano: Long): IO[CorpusItemLoopReport] = {
+    def innerLoop(currentRunCount: Int, mutatorGen: Mutator[IO], currentTotalDuration: Long): IO[Seq[TargetRunReport]] = for {
       bytes <- mutatorGen.mutatedBytes()
-      // workaround scalac bug with tuple decomposition
-      tuple <- IO[(TargetRunReport, Seq[CorpusItem])] {
-        val report = runOne(target, bytes)
-        coverageAnalyzer.process(report) match {
-          case NoNewCoverage => (report, Seq.empty)
-          case NewCoverage(input) => (report, Seq(input))
-        }
-      }
-      targetRunReport = tuple._1
-      newCorpusItems = tuple._2
+      targetRunReport <- IO { runOne(target, bytes) }
       newCurrentTotalDuration = currentTotalDuration + targetRunReport.elapsedTimeNano
-      elapsedForMutator = newCurrentTotalDuration - totalDurationOnStartNano
-      report <- (targetRunReport.exitStatus, options.maxDuration) match {
-        case (TargetExceptionThrown(e), _) if options.exitOnFirstFailure =>
-          IO.pure(
-            FuzzerReport(RunStats(currentRunCount),
-              Seq(ExceptionFailure(targetRunReport.input, e)),
-              newCorpusItems, elapsedTimeNano = elapsedForMutator))
-        case (_, maxDuration: FiniteDuration)
-          if newCurrentTotalDuration > maxDuration.toNanos =>
-          IO.pure(
-            FuzzerReport(RunStats(currentRunCount), Seq(), newCorpusItems, elapsedForMutator))
+      reports <- (targetRunReport.exitStatus, options.maxDuration) match {
+        case (TargetExceptionThrown(_), _) if options.exitOnFirstFailure =>
+          IO.pure(Seq(targetRunReport))
+        case (_, maxDuration: FiniteDuration) if newCurrentTotalDuration > maxDuration.toNanos =>
+          IO.pure(Seq(targetRunReport))
         case _ =>
           mutatorGen.next(targetRunReport.input) match {
             case Some(mutator) =>
               innerLoop(currentRunCount + 1, mutator, newCurrentTotalDuration)
+                .map(rs => targetRunReport +: rs)
             case None =>
-              IO.pure(FuzzerReport(
-                RunStats(currentRunCount), Seq(), newCorpusItems, elapsedForMutator))
+              IO.pure(Seq(targetRunReport))
           }
       }
-    } yield report
+    } yield reports
     innerLoop(1, mutatorGen, totalDurationOnStartNano)
+      .map(rs => CorpusItemLoopReport(rs, coverageAnalyzer))
   }
 
+}
+
+case class CorpusItemLoopReport(runCount: Int,
+                                elapsedTimeNano: Long,
+                                failures: Seq[TargetFailure],
+                                newCorpusItems: Seq[CorpusItem])
+
+object CorpusItemLoopReport {
+  def apply(trr: Seq[TargetRunReport], coverageAnalyzer: CoverageAnalyzer): CorpusItemLoopReport =
+    CorpusItemLoopReport(
+      runCount = trr.length,
+      elapsedTimeNano = trr.map(_.elapsedTimeNano).sum,
+      failures = trr.flatMap {
+        case TargetRunReport(input, TargetExceptionThrown(e), _, _) => Seq(ExceptionFailure(input, e))
+        case _ => Seq()
+      },
+      trr.map(coverageAnalyzer.process).flatMap {
+        case NewCoverage(input) => Seq(input)
+        case _ => Seq()
+      }
+    )
 }

@@ -41,8 +41,8 @@ class FuzzerTest extends FunSuite
     }
 
     val reports = Fuzzer.run(options, TargetObj.target)
-    reports.flatMap(_.failures).length shouldBe 1
-    reports.map(_.stats.runCount).sum shouldBe expectedRunCountFail
+    reports.failures.length shouldBe 1
+    reports.stats.runCount shouldBe expectedRunCountFail
   }
 
   test("empty input on the first run") {
@@ -53,8 +53,8 @@ class FuzzerTest extends FunSuite
       bytes.isEmpty shouldBe true
       throw new RuntimeException("catch me")
     })
-    reports.flatMap(_.failures).length shouldBe 1
-    reports.map(_.stats.runCount).sum shouldBe 1
+    reports.failures.length shouldBe 1
+    reports.stats.runCount shouldBe 1
   }
 
   test("most inputs are unique") {
@@ -76,7 +76,7 @@ class FuzzerTest extends FunSuite
     val timeToRun = 1.second
     val options = FuzzerOptions(
       timeToRun,
-      exitOnFirstFailure = true)
+      exitOnFirstFailure = false)
     var inputHashes = new ArrayBuffer[Int]()
 
     time {
@@ -89,4 +89,29 @@ class FuzzerTest extends FunSuite
     val nonUniqueInputsNum = inputHashes.size - inputHashes.toSet.size
     (nonUniqueInputsNum.toDouble / inputHashes.size.toDouble) should be < 0.01
   }
+
+  test("target failure produce new corpus item") {
+    val options = FuzzerOptions(
+      100.milliseconds,
+      exitOnFirstFailure = false)
+    val expectedRunCountFail = 3
+    var inputBytesOnFailure = Array[Byte]()
+
+    object TargetObj {
+      private var count: Int = 0
+      def target(bytes: Array[Byte]): Unit = {
+        count = count + 1
+        if (count == expectedRunCountFail) {
+          inputBytesOnFailure = bytes
+          throw new RuntimeException("catch me")
+        }
+      }
+    }
+
+    val reports = Fuzzer.run(options, TargetObj.target)
+    reports.failures.length shouldBe 1
+    reports.newCorpusItems.contains(inputBytesOnFailure)
+  }
+
+  // todo test target throwing on every input
 }

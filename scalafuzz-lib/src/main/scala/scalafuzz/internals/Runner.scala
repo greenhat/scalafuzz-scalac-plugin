@@ -14,18 +14,18 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
                                              log: Log[F],
                                              reportAnalyzer: CoverageAnalyzer)
                                             (implicit F: Sync[F], generator: Generator[F]) {
-  def program(options: FuzzerOptions, target: Target): F[Seq[FuzzerReport]] = for {
+  def program(options: FuzzerOptions, target: Target): F[FuzzerReport] = for {
     _ <- log.info(s"starting a run with options: $options")
-    reports <-
+    report <-
       loop(NonEmptyList.fromListUnsafe(generator.emptyBytesCorpusItem +: corpus.items().toList),
-        options, target, totalDurationNano = 0L)
-    _ <- log.info(s"finished with total runs: ${reports.length}")
-  } yield reports
+        options, target, totalDurationNano = 0L).map(FuzzerReport.apply)
+    _ <- log.info(s"finished with total runs: ${report.stats.runCount}")
+  } yield report
 
   private def loop(corpusInputs: NonEmptyList[F[CorpusItem]],
                    options: FuzzerOptions,
                    target: Target,
-                   totalDurationNano: Long): F[Seq[FuzzerReport]] = for {
+                   totalDurationNano: Long): F[Seq[CorpusItemLoopReport]] = for {
     report <- loop.run(options, target, StreamedMutator.seeded(corpusInputs.head), reportAnalyzer,
       totalDurationOnStartNano = totalDurationNano)
     _ <- corpus.add(report.newCorpusItems)
@@ -34,6 +34,7 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
         || (options.maxDuration.isFinite && options.maxDuration.toNanos < totalDurationNano + report.elapsedTimeNano))
         F.delay(Seq())
       else
+      // todo append new corpus items to the corpusItems and ditch addedAfterLastCall
         corpusInputs.tail match {
           case Nil =>
             corpus.addedAfterLastCall match {
