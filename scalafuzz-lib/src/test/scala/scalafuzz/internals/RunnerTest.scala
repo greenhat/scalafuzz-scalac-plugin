@@ -64,6 +64,9 @@ class RunnerTest extends FunSuite
       .program(options, TargetObj.target)
       .unsafeRunSync()
 
-    inputHashes.count(_ == hashInputBytesOnFailure) should be >= 2
+    inputHashes.count(_ == hashInputBytesOnFailure) shouldBe 2
+    corpus.items().length == 1
   }
+
+  // todo test non-empty corpus (existing corpus items should not be "discovered" again)
 }

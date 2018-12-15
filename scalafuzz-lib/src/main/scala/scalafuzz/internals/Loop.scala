@@ -69,6 +69,7 @@ class IOLoop extends Loop[IO] {
 
 }
 
+// todo rename to WhateverPhaseLoopReport
 case class CorpusItemLoopReport(runCount: Int,
                                 elapsedTimeNano: Long,
                                 failures: Seq[TargetFailure],

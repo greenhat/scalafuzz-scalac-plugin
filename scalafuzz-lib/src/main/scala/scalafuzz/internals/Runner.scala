@@ -28,6 +28,7 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
                    totalDurationNano: Long): F[Seq[CorpusItemLoopReport]] = for {
     report <- loop.run(options, target, StreamedMutator.seeded(corpusInputs.head), reportAnalyzer,
       totalDurationOnStartNano = totalDurationNano)
+    // todo filter out corpusInputs.head from newCorpusItems
     _ <- corpus.add(report.newCorpusItems)
     nextCorpusItems = corpusInputs.tail ++ report.newCorpusItems.map(i => F.delay(i))
     reports <-
