@@ -10,6 +10,7 @@ trait Corpus[F[_]] {
 
   def items(): Seq[F[CorpusItem]]
   def add(inputs: Seq[CorpusItem]): F[Unit]
+  // todo: remove
   def addedAfterLastCall: Seq[F[CorpusItem]]
 }
 

@@ -29,25 +29,18 @@ private[scalafuzz] class Runner[F[_]: Monad](loop: Loop[F],
     report <- loop.run(options, target, StreamedMutator.seeded(corpusInputs.head), reportAnalyzer,
       totalDurationOnStartNano = totalDurationNano)
     _ <- corpus.add(report.newCorpusItems)
+    nextCorpusItems = corpusInputs.tail ++ report.newCorpusItems.map(i => F.delay(i))
     reports <-
       if ((report.failures.nonEmpty && options.exitOnFirstFailure)
         || (options.maxDuration.isFinite && options.maxDuration.toNanos < totalDurationNano + report.elapsedTimeNano))
         F.delay(Seq())
-      else
-      // todo append new corpus items to the corpusItems and ditch addedAfterLastCall
-        corpusInputs.tail match {
-          case Nil =>
-            corpus.addedAfterLastCall match {
-              case Nil =>
-                loop(NonEmptyList.one(generator.randomBytesCorpusItem), options, target,
-                  totalDurationNano + report.elapsedTimeNano)
-              case addedItems =>
-                loop(NonEmptyList.fromListUnsafe(addedItems.toList), options, target,
-                  totalDurationNano + report.elapsedTimeNano)
-            }
-          case tail =>
-            loop(NonEmptyList.fromListUnsafe(tail), options, target,
-              totalDurationNano + report.elapsedTimeNano)
-        }
+      else {
+        if (nextCorpusItems.isEmpty)
+          loop(NonEmptyList.one(generator.randomBytesCorpusItem), options, target,
+            totalDurationNano + report.elapsedTimeNano)
+        else
+          loop(NonEmptyList.fromListUnsafe(nextCorpusItems), options, target,
+            totalDurationNano + report.elapsedTimeNano)
+      }
   } yield report +: reports
 }
